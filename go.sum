@@ -1,2 +1,4 @@
 github.com/0xrinful/rush v0.3.1 h1:7EYRm0N89z3t3/Tz9oOV5ifl/n8JlbTzbeuNo96931A=
 github.com/0xrinful/rush v0.3.1/go.mod h1:Tsab50YzG8mj23hYXqrvRKzGq8oZDaMIPBTzzJncZlE=
+github.com/lib/pq v1.12.0 h1:mC1zeiNamwKBecjHarAr26c/+d8V5w/u4J0I/yASbJo=
+github.com/lib/pq v1.12.0/go.mod h1:/p+8NSbOcwzAEI7wiMXFlgydTwcgTr3OSKMsD2BitpA=

@@ -11,17 +11,26 @@ import (
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/config"
+	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/server"
 )
 
 func main() {
 	cfg := config.Load()
-
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true}))
 
+	db, err := database.Open(cfg)
+	if err != nil {
+		logger.Error("db connection failed", "err", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	logger.Info("database connection pool established")
+
 	// repos
-	postsRepo := posts.NewRepository(nil)
+	postsRepo := posts.NewRepository(db)
 
 	// services
 	postsSvc := posts.NewService(postsRepo)
