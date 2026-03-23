@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS post_votes (
+  user_id BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  post_id BIGINT NOT NULL REFERENCES posts (id) ON DELETE CASCADE,
+  value SMALLINT NOT NULL CHECK (value IN (-1, 1)),
+  PRIMARY KEY (user_id, post_id)
+);
