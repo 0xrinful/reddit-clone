@@ -1,6 +1,10 @@
 package posts
 
-import "github.com/0xrinful/reddit-clone/internal/shared/validator"
+import (
+	"time"
+
+	"github.com/0xrinful/reddit-clone/internal/shared/validator"
+)
 
 // request structs
 type CreatePostRequest struct {
@@ -10,7 +14,7 @@ type CreatePostRequest struct {
 
 func (r *CreatePostRequest) Validate(v *validator.Validator) {
 	v.Check(validator.NotBlank(r.Title), "title", "must not be blank")
-	v.Check(validator.MaxLength(r.Title, 100), "title", "must not exceed 100 characters")
+	v.Check(validator.MaxLength(r.Title, 120), "title", "must not exceed 120 characters")
 	v.Check(validator.NotBlank(r.Body), "body", "must not be blank")
 	v.Check(validator.MaxLength(r.Body, 40000), "body", "must not exceed 40000 characters")
 }
@@ -22,32 +26,44 @@ type UpdatePostRequest struct {
 
 // DTOs
 type PostPublicDTO struct {
-	ID    int64  `json:"id"`
-	Title string `json:"title"`
-	Body  string `json:"body"`
+	ID          int64     `json:"id"`
+	Title       string    `json:"title"`
+	Body        string    `json:"body"`
+	UserID      int64     `json:"user_id"`
+	CommunityID int64     `json:"community_id"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type PostOwnerDTO struct {
-	ID    int64  `json:"id"`
-	Title string `json:"title"`
-	Body  string `json:"body"`
-	// extra fields for owner
+	PostPublicDTO
+	Views   int64 `json:"views"`
+	Version int32 `json:"version"`
 }
 
 // mapping helpers
 func toPostPublicDTO(p *Post) PostPublicDTO {
 	return PostPublicDTO{
-		ID:    p.ID,
-		Title: p.Title,
-		Body:  p.Body,
+		ID:          p.ID,
+		Title:       p.Title,
+		Body:        p.Body,
+		UserID:      p.UserID,
+		CommunityID: p.CommunityID,
+		CreatedAt:   p.CreatedAt,
 	}
 }
 
 func toPostOwnerDTO(p *Post) PostOwnerDTO {
 	return PostOwnerDTO{
-		ID:    p.ID,
-		Title: p.Title,
-		Body:  p.Body,
+		PostPublicDTO: PostPublicDTO{
+			ID:          p.ID,
+			Title:       p.Title,
+			Body:        p.Body,
+			UserID:      p.UserID,
+			CommunityID: p.CommunityID,
+			CreatedAt:   p.CreatedAt,
+		},
+		Views:   p.Views,
+		Version: p.Version,
 	}
 }
 

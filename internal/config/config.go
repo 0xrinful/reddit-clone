@@ -21,7 +21,7 @@ func Load() Config {
 	flag.StringVar(
 		&cfg.DB.DSN,
 		"db-dsn",
-		"postgres://reddit:1234@localhost/reddit",
+		"postgres://reddit:1234@localhost/reddit?sslmode=disable",
 		"PostgreSQL DSN",
 	)
 	flag.IntVar(&cfg.DB.MaxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")

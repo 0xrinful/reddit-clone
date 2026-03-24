@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
+	"github.com/0xrinful/reddit-clone/internal/middleware"
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
 )
@@ -19,12 +21,15 @@ type Server struct {
 
 func New(
 	cfg config.Config,
+	communitiesSvc communities.Service,
 	postsSvc posts.Service,
 	logger *slog.Logger,
 ) *Server {
 	responder := response.NewResponder(logger)
+	middleware := middleware.New(responder)
+
 	postsHandler := posts.NewHandler(postsSvc, responder)
-	router := setupRoutes(responder, postsHandler)
+	router := setupRoutes(responder, middleware, communitiesSvc, postsHandler)
 
 	// bridge slog → *log.Logger for http.Server
 	errLog := slog.NewLogLogger(logger.Handler(), slog.LevelError)

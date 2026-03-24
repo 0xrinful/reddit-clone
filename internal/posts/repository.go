@@ -24,7 +24,14 @@ func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, erro
 }
 
 func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
-	return nil
+	query := `
+		INSERT INTO posts (title, body, user_id, community_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, created_at, version`
+
+	args := []any{p.Title, p.Body, p.UserID, p.CommunityID}
+
+	return r.db.QueryRowContext(ctx, query, args...).Scan(&p.ID, &p.CreatedAt, &p.Version)
 }
 
 func (r *postgresRepository) Delete(ctx context.Context, id int64) error {

@@ -1,17 +1,19 @@
 package posts
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/0xrinful/rush"
 
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
+	"github.com/0xrinful/reddit-clone/internal/shared/validator"
 )
 
 type Handler struct {
-	service Service
-	respond *response.Responder
+	service   Service
+	responder *response.Responder
 }
 
 func NewHandler(svc Service, responder *response.Responder) *Handler {
@@ -19,32 +21,35 @@ func NewHandler(svc Service, responder *response.Responder) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(r *rush.Router) {
-	r.Get("/posts/{id}", h.getPost)
-	r.Post("/posts", h.createPost)
+	r.Post("/posts", h.Create)
 }
 
-func (h *Handler) getPost(w http.ResponseWriter, r *http.Request) {
-	post := &Post{
-		ID:    10,
-		Title: "hehe",
-		Body:  "hehe",
-	}
-	h.respond.JSON(w, http.StatusOK, toPostResponse(post))
-}
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	userID := 1 // for now
+	community := request.GetCommunity(r)
 
-func (h *Handler) createPost(w http.ResponseWriter, r *http.Request) {
 	var input CreatePostRequest
 
 	err := request.DecodeJSON(w, r, &input)
 	if err != nil {
-		h.respond.DecodeError(w, err)
+		h.responder.DecodeError(w, err)
 		return
 	}
 
-	post := &Post{
-		Title: input.Title,
-		Body:  input.Body,
+	v := validator.New()
+	if input.Validate(v); !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
 	}
 
-	h.respond.JSON(w, http.StatusOK, toPostResponse(post))
+	post, err := h.service.CreatePost(r.Context(), int64(userID), community.ID, input)
+	if err != nil {
+		h.responder.ServerError(w, err)
+		return
+	}
+
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/api/v1/r/%s/posts/%d", community.Name, post.ID))
+
+	h.responder.JSON(w, http.StatusCreated, toPostResponse(post), headers)
 }

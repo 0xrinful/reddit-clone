@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
 	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/posts"
@@ -18,7 +19,7 @@ import (
 
 func main() {
 	cfg := config.Load()
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true}))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	db, err := database.Open(cfg)
 	if err != nil {
@@ -29,14 +30,13 @@ func main() {
 
 	logger.Info("database connection pool established")
 
-	// repos
+	communitiesRepo := communities.NewRepository(db)
 	postsRepo := posts.NewRepository(db)
 
-	// services
+	communitiesSvc := communities.NewService(communitiesRepo)
 	postsSvc := posts.NewService(postsRepo)
 
-	// server
-	srv := server.New(cfg, postsSvc, logger)
+	srv := server.New(cfg, communitiesSvc, postsSvc, logger)
 
 	// graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
