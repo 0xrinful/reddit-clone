@@ -26,12 +26,12 @@ type UpdatePostRequest struct {
 
 // DTOs
 type PostPublicDTO struct {
-	ID          int64     `json:"id"`
-	Title       string    `json:"title"`
-	Body        string    `json:"body"`
-	UserID      int64     `json:"user_id"`
-	CommunityID int64     `json:"community_id"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID            int64     `json:"id"`
+	Title         string    `json:"title"`
+	Body          string    `json:"body"`
+	UserID        int64     `json:"user_id"`
+	CommunityName string    `json:"community"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 type PostOwnerDTO struct {
@@ -41,29 +41,22 @@ type PostOwnerDTO struct {
 }
 
 // mapping helpers
-func toPostPublicDTO(p *Post) PostPublicDTO {
+func toPostPublicDTO(p *Post, communityName string) PostPublicDTO {
 	return PostPublicDTO{
-		ID:          p.ID,
-		Title:       p.Title,
-		Body:        p.Body,
-		UserID:      p.UserID,
-		CommunityID: p.CommunityID,
-		CreatedAt:   p.CreatedAt,
+		ID:            p.ID,
+		Title:         p.Title,
+		Body:          p.Body,
+		UserID:        p.UserID,
+		CommunityName: communityName,
+		CreatedAt:     p.CreatedAt,
 	}
 }
 
-func toPostOwnerDTO(p *Post) PostOwnerDTO {
+func toPostOwnerDTO(p *Post, communityName string) PostOwnerDTO {
 	return PostOwnerDTO{
-		PostPublicDTO: PostPublicDTO{
-			ID:          p.ID,
-			Title:       p.Title,
-			Body:        p.Body,
-			UserID:      p.UserID,
-			CommunityID: p.CommunityID,
-			CreatedAt:   p.CreatedAt,
-		},
-		Views:   p.Views,
-		Version: p.Version,
+		PostPublicDTO: toPostPublicDTO(p, communityName),
+		Views:         p.Views,
+		Version:       p.Version,
 	}
 }
 
@@ -73,8 +66,8 @@ type PostResponse struct {
 }
 
 // response constructor
-func toPostResponse(p *Post) PostResponse {
+func toPostResponse(p *Post, communityName string) PostResponse {
 	return PostResponse{
-		Post: toPostPublicDTO(p),
+		Post: toPostPublicDTO(p, communityName),
 	}
 }

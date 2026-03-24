@@ -51,5 +51,5 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/api/v1/r/%s/posts/%d", community.Name, post.ID))
 
-	h.responder.JSON(w, http.StatusCreated, toPostResponse(post), headers)
+	h.responder.JSON(w, http.StatusCreated, toPostResponse(post, community.Name), headers)
 }
