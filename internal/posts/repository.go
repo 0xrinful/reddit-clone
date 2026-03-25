@@ -10,9 +10,9 @@ import (
 )
 
 type Repository interface {
-	Get(ctx context.Context, id int64) (*Post, error)
+	Get(ctx context.Context, id, communityID int64) (*Post, error)
 	Create(ctx context.Context, p *Post) error
-	Delete(ctx context.Context, id int64) error
+	Delete(ctx context.Context, id, userID, communityID int64) error
 }
 
 func NewRepository(db *sql.DB) Repository {
@@ -23,18 +23,18 @@ type postgresRepository struct {
 	db *sql.DB
 }
 
-func (r *postgresRepository) Get(ctx context.Context, id int64) (*Post, error) {
+func (r *postgresRepository) Get(ctx context.Context, id, CommunityID int64) (*Post, error) {
 	query := `
 		SELECT id, title, body, user_id, community_id, views, created_at, version
 		FROM posts
-		WHERE id = $1`
+		WHERE id = $1 AND community_id = $2`
 
 	var p Post
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db.QueryRowContext(ctx, query, id, CommunityID).Scan(
 		&p.ID, &p.Title, &p.Body, &p.UserID, &p.CommunityID,
 		&p.Views, &p.CreatedAt, &p.Version,
 	)
@@ -64,6 +64,27 @@ func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
 	return r.db.QueryRowContext(ctx, query, args...).Scan(&p.ID, &p.CreatedAt, &p.Version)
 }
 
-func (r *postgresRepository) Delete(ctx context.Context, id int64) error {
+func (r *postgresRepository) Delete(ctx context.Context, id, userID, communityID int64) error {
+	query := `
+		DELETE FROM posts 
+		WHERE id = $1 AND user_id = $2 AND community_id = $3`
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	result, err := r.db.ExecContext(ctx, query, id, userID, communityID)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows == 0 {
+		return apperr.ErrNotFound
+	}
+
 	return nil
 }

@@ -65,9 +65,19 @@ type PostResponse struct {
 	Post PostPublicDTO `json:"post"`
 }
 
+type PostOwnerResponse struct {
+	Post PostOwnerDTO `json:"post"`
+}
+
 // response constructor
 func toPostResponse(p *Post, communityName string) PostResponse {
 	return PostResponse{
 		Post: toPostPublicDTO(p, communityName),
+	}
+}
+
+func toPostOwnerResponse(p *Post, communityName string) PostOwnerResponse {
+	return PostOwnerResponse{
+		Post: toPostOwnerDTO(p, communityName),
 	}
 }

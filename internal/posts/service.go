@@ -2,13 +2,12 @@ package posts
 
 import (
 	"context"
-
-	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
 )
 
 type Service interface {
 	GetPost(ctx context.Context, id, communityID int64) (*Post, error)
 	CreatePost(ctx context.Context, userID, communityID int64, req CreatePostRequest) (*Post, error)
+	DeletePost(ctx context.Context, id, userID, communityID int64) error
 }
 
 type service struct {
@@ -39,14 +38,9 @@ func (s *service) CreatePost(
 }
 
 func (s *service) GetPost(ctx context.Context, id, communityID int64) (*Post, error) {
-	post, err := s.repo.Get(ctx, id)
-	if err != nil {
-		return nil, err
-	}
+	return s.repo.Get(ctx, id, communityID)
+}
 
-	if post.CommunityID != communityID {
-		return nil, apperr.ErrNotFound
-	}
-
-	return post, nil
+func (s *service) DeletePost(ctx context.Context, id, userID, communityID int64) error {
+	return s.repo.Delete(ctx, id, userID, communityID)
 }

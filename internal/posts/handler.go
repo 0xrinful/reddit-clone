@@ -25,6 +25,7 @@ func NewHandler(svc Service, responder *response.Responder) *Handler {
 func (h *Handler) RegisterRoutes(r *rush.Router) {
 	r.Post("/posts", h.Create)
 	r.Get("/posts/{id}", h.Get)
+	r.Delete("/posts/{id}", h.Delete)
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -34,6 +35,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID := int64(1) //  TODO: for now
 	community := request.GetCommunity(r)
 
 	post, err := h.service.GetPost(r.Context(), id, community.ID)
@@ -47,11 +49,15 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.responder.JSON(w, http.StatusOK, toPostResponse(post, community.Name))
+	if userID == post.UserID {
+		h.responder.JSON(w, http.StatusOK, toPostOwnerResponse(post, community.Name))
+	} else {
+		h.responder.JSON(w, http.StatusOK, toPostResponse(post, community.Name))
+	}
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	userID := 1 // for now
+	userID := int64(1) //  TODO: for now
 	community := request.GetCommunity(r)
 
 	var input CreatePostRequest
@@ -68,7 +74,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.service.CreatePost(r.Context(), int64(userID), community.ID, input)
+	post, err := h.service.CreatePost(r.Context(), userID, community.ID, input)
 	if err != nil {
 		h.responder.ServerError(w, err)
 		return
@@ -77,5 +83,29 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/api/v1/r/%s/posts/%d", community.Name, post.ID))
 
-	h.responder.JSON(w, http.StatusCreated, toPostResponse(post, community.Name), headers)
+	h.responder.JSON(w, http.StatusCreated, toPostOwnerResponse(post, community.Name), headers)
+}
+
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	id, err := request.ReadID(r)
+	if err != nil {
+		h.responder.NotFound(w, r)
+		return
+	}
+
+	userID := int64(1) //  TODO: for now
+	community := request.GetCommunity(r)
+
+	err = h.service.DeletePost(r.Context(), id, userID, community.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, apperr.ErrNotFound):
+			h.responder.NotFound(w, r)
+		default:
+			h.responder.ServerError(w, err)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
