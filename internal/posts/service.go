@@ -2,10 +2,12 @@ package posts
 
 import (
 	"context"
+
+	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
 )
 
 type Service interface {
-	GetPost(ctx context.Context, id int64) (*Post, error)
+	GetPost(ctx context.Context, id, communityID int64) (*Post, error)
 	CreatePost(ctx context.Context, userID, communityID int64, req CreatePostRequest) (*Post, error)
 }
 
@@ -36,6 +38,15 @@ func (s *service) CreatePost(
 	return p, nil
 }
 
-func (s *service) GetPost(ctx context.Context, id int64) (*Post, error) {
-	return nil, nil
+func (s *service) GetPost(ctx context.Context, id, communityID int64) (*Post, error) {
+	post, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if post.CommunityID != communityID {
+		return nil, apperr.ErrNotFound
+	}
+
+	return post, nil
 }

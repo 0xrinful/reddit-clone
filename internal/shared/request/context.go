@@ -23,7 +23,7 @@ func WithCommunity(r *http.Request, c *CommunityCtx) *http.Request {
 func GetCommunity(r *http.Request) *CommunityCtx {
 	community, ok := r.Context().Value(communityKey{}).(*CommunityCtx)
 	if !ok {
-		panic("request.GetCommunity: LoadCommunity middleware not registered on this route")
+		panic("missing community_name value in request context")
 	}
 	return community
 }
