@@ -6,7 +6,7 @@ import (
 
 type Service interface {
 	GetPost(ctx context.Context, id, communityID int64) (*Post, error)
-	CreatePost(ctx context.Context, userID, communityID int64, req CreatePostRequest) (*Post, error)
+	CreatePost(ctx context.Context, params CreatePostParams) (*Post, error)
 	DeletePost(ctx context.Context, id, userID, communityID int64) error
 }
 
@@ -20,14 +20,13 @@ func NewService(repo Repository) Service {
 
 func (s *service) CreatePost(
 	ctx context.Context,
-	userID, communityID int64,
-	req CreatePostRequest,
+	params CreatePostParams,
 ) (*Post, error) {
 	p := &Post{
-		Title:       req.Title,
-		Body:        req.Body,
-		UserID:      userID,
-		CommunityID: communityID,
+		Title:       params.Title,
+		Body:        params.Body,
+		UserID:      params.UserID,
+		CommunityID: params.CommunityID,
 	}
 
 	if err := s.repo.Create(ctx, p); err != nil {

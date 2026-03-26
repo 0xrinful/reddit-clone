@@ -74,7 +74,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post, err := h.service.CreatePost(r.Context(), userID, community.ID, input)
+	params := CreatePostParams{
+		UserID:      userID,
+		CommunityID: community.ID,
+		Title:       input.Title,
+		Body:        input.Body,
+	}
+	post, err := h.service.CreatePost(r.Context(), params)
 	if err != nil {
 		h.responder.ServerError(w, err)
 		return
