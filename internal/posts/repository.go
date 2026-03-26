@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
+	"github.com/0xrinful/reddit-clone/internal/shared/query"
 )
 
 type Repository interface {
 	Get(ctx context.Context, id, communityID int64) (*Post, error)
 	Create(ctx context.Context, p *Post) error
+	Update(ctx context.Context, p UpdatePostParams) error
 	Delete(ctx context.Context, id, userID, communityID int64) error
 }
 
@@ -62,6 +64,43 @@ func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
 	defer cancel()
 
 	return r.db.QueryRowContext(ctx, query, args...).Scan(&p.ID, &p.CreatedAt, &p.Version)
+}
+
+func (r *postgresRepository) Update(ctx context.Context, p UpdatePostParams) error {
+	var q query.Query
+	q.Update("posts")
+
+	if p.Title != nil {
+		q.Set("title", *p.Title)
+	}
+
+	if p.Body != nil {
+		q.Set("body", *p.Body)
+	}
+
+	q.Set("version", query.Raw("version + 1"))
+
+	q.Where("id = ? AND community_id = ? AND user_id = ?", p.ID, p.CommunityID, p.UserID)
+	query, args := q.ToSql()
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	result, err := r.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows == 0 {
+		return apperr.ErrNotFound
+	}
+
+	return nil
 }
 
 func (r *postgresRepository) Delete(ctx context.Context, id, userID, communityID int64) error {

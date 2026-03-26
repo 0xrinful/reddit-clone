@@ -26,6 +26,7 @@ func (h *Handler) RegisterRoutes(r *rush.Router) {
 	r.Post("/posts", h.Create)
 	r.Get("/posts/{id}", h.Get)
 	r.Delete("/posts/{id}", h.Delete)
+	r.Patch("/posts/{id}", h.Update)
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -90,6 +91,51 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	headers.Set("Location", fmt.Sprintf("/api/v1/r/%s/posts/%d", community.Name, post.ID))
 
 	h.responder.JSON(w, http.StatusCreated, toPostOwnerResponse(post, community.Name), headers)
+}
+
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	id, err := request.ReadID(r)
+	if err != nil {
+		h.responder.NotFound(w, r)
+		return
+	}
+
+	var input UpdatePostRequest
+
+	err = request.DecodeJSON(w, r, &input)
+	if err != nil {
+		h.responder.DecodeError(w, err)
+		return
+	}
+
+	v := validator.New()
+	if input.Validate(v); !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	userID := int64(1) //  TODO: for now
+	community := request.GetCommunity(r)
+	params := UpdatePostParams{
+		ID:          id,
+		UserID:      userID,
+		CommunityID: community.ID,
+		Title:       input.Title,
+		Body:        input.Body,
+	}
+
+	err = h.service.UpdatePost(r.Context(), params)
+	if err != nil {
+		switch {
+		case errors.Is(err, apperr.ErrNotFound):
+			h.responder.NotFound(w, r)
+		default:
+			h.responder.ServerError(w, err)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {

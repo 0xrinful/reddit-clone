@@ -7,6 +7,7 @@ import (
 type Service interface {
 	GetPost(ctx context.Context, id, communityID int64) (*Post, error)
 	CreatePost(ctx context.Context, params CreatePostParams) (*Post, error)
+	UpdatePost(ctx context.Context, params UpdatePostParams) error
 	DeletePost(ctx context.Context, id, userID, communityID int64) error
 }
 
@@ -34,6 +35,10 @@ func (s *service) CreatePost(
 	}
 
 	return p, nil
+}
+
+func (s *service) UpdatePost(ctx context.Context, params UpdatePostParams) error {
+	return s.repo.Update(ctx, params)
 }
 
 func (s *service) GetPost(ctx context.Context, id, communityID int64) (*Post, error) {
