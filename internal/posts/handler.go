@@ -24,6 +24,7 @@ func NewHandler(svc Service, responder *response.Responder) *Handler {
 
 func (h *Handler) RegisterRoutes(r *rush.Router) {
 	r.Post("/posts", h.Create)
+	r.Get("/posts", h.List)
 	r.Get("/posts/{id}", h.Get)
 	r.Delete("/posts/{id}", h.Delete)
 	r.Patch("/posts/{id}", h.Update)
@@ -160,4 +161,38 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	community := request.GetCommunity(r)
+
+	v := validator.New()
+	cursor := request.ReadCursor(r, v)
+
+	sort := SortBy(request.ReadString(r.URL.Query(), "sort", "new"))
+	v.Check(sort.IsValid(), "sort", "invalid sort value")
+
+	if !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	params := ListPostParams{
+		CommunityID: community.ID,
+		Cursor:      cursor,
+		Sort:        sort,
+	}
+
+	posts, err := h.service.List(r.Context(), params)
+	if err != nil {
+		h.responder.ServerError(w, err)
+		return
+	}
+
+	var nextCursor int64
+	if len(posts) == cursor.Limit {
+		nextCursor = posts[len(posts)-1].ID
+	}
+
+	h.responder.JSON(w, http.StatusOK, toListPostsResponse(posts, nextCursor, community.Name))
 }

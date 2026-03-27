@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
@@ -15,6 +16,7 @@ type Repository interface {
 	Create(ctx context.Context, p *Post) error
 	Update(ctx context.Context, p UpdatePostParams) error
 	Delete(ctx context.Context, id, userID, communityID int64) error
+	List(ctx context.Context, params ListPostParams) ([]*Post, error)
 }
 
 func NewRepository(db *sql.DB) Repository {
@@ -126,4 +128,45 @@ func (r *postgresRepository) Delete(ctx context.Context, id, userID, communityID
 	}
 
 	return nil
+}
+
+func (r *postgresRepository) List(ctx context.Context, params ListPostParams) ([]*Post, error) {
+	query := fmt.Sprintf(`
+		SELECT p.id, p.title, p.body, p.user_id, p.community_id, p.views, p.created_at,
+		p.version, COALESCE(SUM(v.value), 0) AS score FROM posts p 
+		LEFT JOIN post_votes v ON p.id = v.post_id
+		WHERE community_id = $1 AND ($2 = 0 OR p.id < $2)
+		GROUP BY p.id
+		ORDER BY %s, p.id DESC
+		LIMIT $3`, params.Sort.ToSql())
+
+	args := []any{params.CommunityID, params.Cursor.After, params.Cursor.Limit}
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	posts := make([]*Post, 0, params.Cursor.Limit)
+	for rows.Next() {
+		var p Post
+		err = rows.Scan(
+			&p.ID, &p.Title, &p.Body, &p.UserID, &p.CommunityID,
+			&p.Views, &p.CreatedAt, &p.Version, &p.Score,
+		)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, &p)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
 }

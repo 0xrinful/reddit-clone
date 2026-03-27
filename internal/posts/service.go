@@ -9,6 +9,7 @@ type Service interface {
 	CreatePost(ctx context.Context, params CreatePostParams) (*Post, error)
 	UpdatePost(ctx context.Context, params UpdatePostParams) error
 	DeletePost(ctx context.Context, id, userID, communityID int64) error
+	List(ctx context.Context, params ListPostParams) ([]*Post, error)
 }
 
 type service struct {
@@ -47,4 +48,8 @@ func (s *service) GetPost(ctx context.Context, id, communityID int64) (*Post, er
 
 func (s *service) DeletePost(ctx context.Context, id, userID, communityID int64) error {
 	return s.repo.Delete(ctx, id, userID, communityID)
+}
+
+func (s *service) List(ctx context.Context, params ListPostParams) ([]*Post, error) {
+	return s.repo.List(ctx, params)
 }

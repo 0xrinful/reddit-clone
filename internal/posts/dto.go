@@ -60,6 +60,7 @@ type PostPublicDTO struct {
 	ID            int64     `json:"id"`
 	Title         string    `json:"title"`
 	Body          string    `json:"body"`
+	Score         int64     `json:"score"`
 	UserID        int64     `json:"user_id"`
 	CommunityName string    `json:"community"`
 	CreatedAt     time.Time `json:"created_at"`
@@ -78,6 +79,7 @@ func toPostPublicDTO(p *Post, communityName string) PostPublicDTO {
 		Title:         p.Title,
 		Body:          p.Body,
 		UserID:        p.UserID,
+		Score:         p.Score,
 		CommunityName: communityName,
 		CreatedAt:     p.CreatedAt,
 	}
@@ -100,6 +102,11 @@ type PostOwnerResponse struct {
 	Post PostOwnerDTO `json:"post"`
 }
 
+type ListPostsResponse struct {
+	Posts      []PostPublicDTO `json:"posts"`
+	NextCursor int64           `json:"next_cursor,omitempty"`
+}
+
 // response constructor
 func toPostResponse(p *Post, communityName string) PostResponse {
 	return PostResponse{
@@ -111,4 +118,12 @@ func toPostOwnerResponse(p *Post, communityName string) PostOwnerResponse {
 	return PostOwnerResponse{
 		Post: toPostOwnerDTO(p, communityName),
 	}
+}
+
+func toListPostsResponse(p []*Post, nextCursor int64, communityName string) ListPostsResponse {
+	posts := make([]PostPublicDTO, len(p))
+	for i := range p {
+		posts[i] = toPostPublicDTO(p[i], communityName)
+	}
+	return ListPostsResponse{Posts: posts, NextCursor: nextCursor}
 }
