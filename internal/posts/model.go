@@ -50,19 +50,8 @@ func (s SortBy) IsValid() bool {
 	}
 }
 
-func (s SortBy) ToSql() string {
-	switch s {
-	case SortByNew:
-		return "created_at DESC"
-	case SortByTop:
-		return "score DESC"
-	default:
-		return "created_at DESC"
-	}
-}
-
 type ListPostParams struct {
 	Sort        SortBy
-	Cursor      pagination.Cursor
+	Pagination  pagination.Params
 	CommunityID int64
 }

@@ -25,18 +25,15 @@ func ReadString(qs url.Values, key string, defaultValue string) string {
 	return s
 }
 
-func ReadCursor(r *http.Request, v *validator.Validator) pagination.Cursor {
-	c := pagination.Cursor{Limit: pagination.DefaultLimit}
+func ParsePagination(r *http.Request, v *validator.Validator) pagination.Params {
+	params := pagination.Params{Limit: pagination.DefaultLimit}
 
-	if s := r.URL.Query().Get("after"); s != "" {
-		if after, err := strconv.ParseInt(s, 10, 64); err == nil {
-			if after < 1 {
-				v.AddError("after", "must be greater than zero")
-			} else {
-				c.After = after
-			}
+	if s := r.URL.Query().Get("cursor"); s != "" {
+		cursor, err := pagination.Decode(s)
+		if err != nil {
+			v.AddError("cursor", "invalid cursor value")
 		} else {
-			v.AddError("after", "must be an integer value")
+			params.Cursor = cursor
 		}
 	}
 
@@ -48,11 +45,11 @@ func ReadCursor(r *http.Request, v *validator.Validator) pagination.Cursor {
 			if limit < 1 {
 				v.AddError("limit", "must be greater than zero")
 			} else {
-				c.Limit = limit
+				params.Limit = limit
 			}
 		} else {
 			v.AddError("limit", "must be an integer value")
 		}
 	}
-	return c
+	return params
 }

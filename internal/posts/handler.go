@@ -8,6 +8,7 @@ import (
 	"github.com/0xrinful/rush"
 
 	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
+	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
 	"github.com/0xrinful/reddit-clone/internal/shared/validator"
@@ -167,7 +168,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	community := request.GetCommunity(r)
 
 	v := validator.New()
-	cursor := request.ReadCursor(r, v)
+	pageParams := request.ParsePagination(r, v)
 
 	sort := SortBy(request.ReadString(r.URL.Query(), "sort", "new"))
 	v.Check(sort.IsValid(), "sort", "invalid sort value")
@@ -177,9 +178,12 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	limit := pageParams.Limit
+	pageParams.Limit += 1 // used to determine if there is a next cursor
+
 	params := ListPostParams{
 		CommunityID: community.ID,
-		Cursor:      cursor,
+		Pagination:  pageParams,
 		Sort:        sort,
 	}
 
@@ -189,9 +193,28 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var nextCursor int64
-	if len(posts) == cursor.Limit {
-		nextCursor = posts[len(posts)-1].ID
+	var nextCursor string
+	var next *pagination.Cursor
+	if len(posts) > limit {
+		page := posts[:limit] // trim extra row used for next page check
+		last := page[len(page)-1]
+		next = &pagination.Cursor{ID: last.ID}
+
+		switch sort {
+		case SortByNew:
+			next.CreatedAt = &last.CreatedAt
+		case SortByTop, SortByHot:
+			next.Score = &last.Score
+		}
+
+		s, err := next.Encode()
+		if err != nil {
+			h.responder.ServerError(w, err)
+			return
+		}
+		nextCursor = s
+
+		posts = page
 	}
 
 	h.responder.JSON(w, http.StatusOK, toListPostsResponse(posts, nextCursor, community.Name))

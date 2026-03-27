@@ -104,7 +104,7 @@ type PostOwnerResponse struct {
 
 type ListPostsResponse struct {
 	Posts      []PostPublicDTO `json:"posts"`
-	NextCursor int64           `json:"next_cursor,omitempty"`
+	NextCursor string          `json:"next_cursor,omitempty"`
 }
 
 // response constructor
@@ -120,7 +120,7 @@ func toPostOwnerResponse(p *Post, communityName string) PostOwnerResponse {
 	}
 }
 
-func toListPostsResponse(p []*Post, nextCursor int64, communityName string) ListPostsResponse {
+func toListPostsResponse(p []*Post, nextCursor string, communityName string) ListPostsResponse {
 	posts := make([]PostPublicDTO, len(p))
 	for i := range p {
 		posts[i] = toPostPublicDTO(p[i], communityName)

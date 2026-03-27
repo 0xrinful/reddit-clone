@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
@@ -131,27 +132,53 @@ func (r *postgresRepository) Delete(ctx context.Context, id, userID, communityID
 }
 
 func (r *postgresRepository) List(ctx context.Context, params ListPostParams) ([]*Post, error) {
-	query := fmt.Sprintf(`
-		SELECT p.id, p.title, p.body, p.user_id, p.community_id, p.views, p.created_at,
-		p.version, COALESCE(SUM(v.value), 0) AS score FROM posts p 
-		LEFT JOIN post_votes v ON p.id = v.post_id
-		WHERE community_id = $1 AND ($2 = 0 OR p.id < $2)
-		GROUP BY p.id
-		ORDER BY %s, p.id DESC
-		LIMIT $3`, params.Sort.ToSql())
+	var query strings.Builder
+	args := []any{params.CommunityID}
+	cursor := params.Pagination.Cursor
 
-	args := []any{params.CommunityID, params.Cursor.After, params.Cursor.Limit}
+	query.WriteString(`
+		WITH scored_posts AS (
+			SELECT p.id, p.title, p.body, p.user_id, p.community_id,
+				p.views, p.created_at, p.version,
+				COALESCE(SUM(v.value), 0) AS score
+			FROM posts p
+			LEFT JOIN post_votes v ON p.id = v.post_id
+			WHERE p.community_id = $1
+			GROUP BY p.id
+		)
+		SELECT * FROM scored_posts
+	`)
+
+	switch params.Sort {
+	case SortByNew:
+		if cursor != nil {
+			args = append(args, cursor.CreatedAt, cursor.ID)
+			query.WriteString("WHERE (created_at, id) < ($2, $3) ")
+		}
+		query.WriteString("ORDER BY created_at DESC, id DESC ")
+	case SortByTop, SortByHot:
+		if cursor != nil {
+			args = append(args, cursor.Score, cursor.ID)
+			query.WriteString("WHERE (score, id) < ($2, $3) ")
+		}
+		query.WriteString("ORDER BY score DESC, id DESC ")
+	default:
+		panic("invalid sort value")
+	}
+
+	args = append(args, params.Pagination.Limit)
+	fmt.Fprintf(&query, "LIMIT $%d", len(args))
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	rows, err := r.db.QueryContext(ctx, query, args...)
+	rows, err := r.db.QueryContext(ctx, query.String(), args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	posts := make([]*Post, 0, params.Cursor.Limit)
+	posts := make([]*Post, 0, params.Pagination.Limit)
 	for rows.Next() {
 		var p Post
 		err = rows.Scan(
