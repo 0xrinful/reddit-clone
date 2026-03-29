@@ -49,6 +49,7 @@ func (r *postgresRepository) GetByName(ctx context.Context, name string) (*Commu
 	if ownerID.Valid {
 		c.OwnerID = &ownerID.Int64
 	}
+	c.CreatedAt = c.CreatedAt.UTC()
 
 	return &c, nil
 }

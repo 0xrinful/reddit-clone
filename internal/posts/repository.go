@@ -51,6 +51,7 @@ func (r *postgresRepository) Get(ctx context.Context, id, CommunityID int64) (*P
 	if err != nil {
 		return nil, err
 	}
+	p.CreatedAt = p.CreatedAt.UTC()
 
 	return &p, nil
 }
@@ -66,7 +67,13 @@ func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	return r.db.QueryRowContext(ctx, query, args...).Scan(&p.ID, &p.CreatedAt, &p.Version)
+	err := r.db.QueryRowContext(ctx, query, args...).Scan(&p.ID, &p.CreatedAt, &p.Version)
+	if err != nil {
+		return err
+	}
+	p.CreatedAt = p.CreatedAt.UTC()
+
+	return nil
 }
 
 func (r *postgresRepository) Update(ctx context.Context, p UpdatePostParams) error {
@@ -188,6 +195,7 @@ func (r *postgresRepository) List(ctx context.Context, params ListPostParams) ([
 		if err != nil {
 			return nil, err
 		}
+		p.CreatedAt = p.CreatedAt.UTC()
 		posts = append(posts, &p)
 	}
 
