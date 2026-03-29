@@ -207,13 +207,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			next.Score = &last.Score
 		}
 
-		s, err := next.Encode()
-		if err != nil {
-			h.responder.ServerError(w, err)
-			return
-		}
-		nextCursor = s
-
+		nextCursor = next.Encode()
 		posts = page
 	}
 
