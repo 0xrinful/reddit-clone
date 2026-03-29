@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/0xrinful/reddit-clone/internal/communities"
-	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
+	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 )
 
@@ -16,7 +16,7 @@ func (m *Middleware) LoadCommunity(svc communities.Service) func(http.Handler) h
 			c, err := svc.GetByName(r.Context(), name)
 			if err != nil {
 				switch {
-				case errors.Is(err, apperr.ErrNotFound):
+				case errors.Is(err, errs.ErrNotFound):
 					m.responder.NotFound(w, r)
 				default:
 					m.responder.ServerError(w, err)

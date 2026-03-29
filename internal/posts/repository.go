@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
+	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/query"
 )
 
@@ -45,7 +45,7 @@ func (r *postgresRepository) Get(ctx context.Context, id, CommunityID int64) (*P
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, apperr.ErrNotFound
+		return nil, errs.ErrNotFound
 	}
 
 	if err != nil {
@@ -100,7 +100,7 @@ func (r *postgresRepository) Update(ctx context.Context, p UpdatePostParams) err
 	}
 
 	if affectedRows == 0 {
-		return apperr.ErrNotFound
+		return errs.ErrNotFound
 	}
 
 	return nil
@@ -125,7 +125,7 @@ func (r *postgresRepository) Delete(ctx context.Context, id, userID, communityID
 	}
 
 	if affectedRows == 0 {
-		return apperr.ErrNotFound
+		return errs.ErrNotFound
 	}
 
 	return nil

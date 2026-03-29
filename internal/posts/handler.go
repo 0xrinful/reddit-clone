@@ -7,7 +7,7 @@ import (
 
 	"github.com/0xrinful/rush"
 
-	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
+	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
@@ -44,7 +44,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	post, err := h.service.GetPost(r.Context(), id, community.ID)
 	if err != nil {
 		switch {
-		case errors.Is(err, apperr.ErrNotFound):
+		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
 		default:
 			h.responder.ServerError(w, err)
@@ -129,7 +129,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	err = h.service.UpdatePost(r.Context(), params)
 	if err != nil {
 		switch {
-		case errors.Is(err, apperr.ErrNotFound):
+		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
 		default:
 			h.responder.ServerError(w, err)
@@ -153,7 +153,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	err = h.service.DeletePost(r.Context(), id, userID, community.ID)
 	if err != nil {
 		switch {
-		case errors.Is(err, apperr.ErrNotFound):
+		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
 		default:
 			h.responder.ServerError(w, err)

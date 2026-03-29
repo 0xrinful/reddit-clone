@@ -1,0 +1,16 @@
+/api/v1/
+├── auth/
+│   ├── POST register
+│   └── POST login
+├── r/{community_name}/          ← LoadCommunity middleware runs here
+│   ├── GET  posts               → list posts in community
+│   ├── POST posts               → create post (+ auth)
+│   └── posts/{post_id}/
+│       ├── GET                  → get single post
+│       ├── PATCH                → update post (+ auth)
+│       ├── DELETE               → delete post (+ auth)
+│       └── comments/
+│           ├── GET              → list comments
+│           └── POST             → create comment (+ auth)
+└── users/{username}/
+    └── GET       

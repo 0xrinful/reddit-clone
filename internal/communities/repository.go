@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/0xrinful/reddit-clone/internal/shared/apperr"
+	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
 type Repository interface {
@@ -39,7 +39,7 @@ func (r *postgresRepository) GetByName(ctx context.Context, name string) (*Commu
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, apperr.ErrNotFound
+		return nil, errs.ErrNotFound
 	}
 
 	if err != nil {
