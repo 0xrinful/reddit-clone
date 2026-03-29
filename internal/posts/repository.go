@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
@@ -77,18 +75,18 @@ func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
 }
 
 func (r *postgresRepository) Update(ctx context.Context, p UpdatePostParams) error {
-	var q query.Query
+	q := query.New()
 	q.Update("posts")
 
 	if p.Title != nil {
-		q.Set("title", *p.Title)
+		q.Set("title = ?", *p.Title)
 	}
 
 	if p.Body != nil {
-		q.Set("body", *p.Body)
+		q.Set("body = ?", *p.Body)
 	}
 
-	q.Set("version", query.Raw("version + 1"))
+	q.Set("version = version + 1")
 
 	q.Where("id = ? AND community_id = ? AND user_id = ?", p.ID, p.CommunityID, p.UserID)
 	query, args := q.ToSql()
@@ -139,47 +137,43 @@ func (r *postgresRepository) Delete(ctx context.Context, id, userID, communityID
 }
 
 func (r *postgresRepository) List(ctx context.Context, params ListPostParams) ([]*Post, error) {
-	var query strings.Builder
-	args := []any{params.CommunityID}
+	query := query.New()
 	cursor := params.Pagination.Cursor
 
-	query.WriteString(`
+	query.Prefix(`
 		WITH scored_posts AS (
 			SELECT p.id, p.title, p.body, p.user_id, p.community_id,
 				p.views, p.created_at, p.version,
 				COALESCE(SUM(v.value), 0) AS score
 			FROM posts p
 			LEFT JOIN post_votes v ON p.id = v.post_id
-			WHERE p.community_id = $1
+			WHERE p.community_id = ?
 			GROUP BY p.id
-		)
-		SELECT * FROM scored_posts
-	`)
+		)`, params.CommunityID)
+	query.Select("*", "scored_posts")
 
 	switch params.Sort {
 	case SortByNew:
 		if cursor != nil {
-			args = append(args, cursor.CreatedAt, cursor.ID)
-			query.WriteString("WHERE (created_at, id) < ($2, $3) ")
+			query.Where("(created_at, id) < (?, ?)", cursor.CreatedAt, cursor.ID)
 		}
-		query.WriteString("ORDER BY created_at DESC, id DESC ")
+		query.Order("created_at DESC, id DESC ")
 	case SortByTop, SortByHot:
 		if cursor != nil {
-			args = append(args, cursor.Score, cursor.ID)
-			query.WriteString("WHERE (score, id) < ($2, $3) ")
+			query.Where("(score, id) < (?, ?)", cursor.Score, cursor.ID)
 		}
-		query.WriteString("ORDER BY score DESC, id DESC ")
+		query.Order("score DESC, id DESC ")
 	default:
 		panic("invalid sort value")
 	}
 
-	args = append(args, params.Pagination.Limit)
-	fmt.Fprintf(&query, "LIMIT $%d", len(args))
+	query.Limit(params.Pagination.Limit)
+	q, args := query.ToSql()
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	rows, err := r.db.QueryContext(ctx, query.String(), args...)
+	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
