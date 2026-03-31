@@ -12,6 +12,9 @@ type Config struct {
 		MaxIdleConns int
 		MaxIdleTime  string
 	}
+	Limiter struct {
+		Enabled bool
+	}
 }
 
 func Load() Config {
@@ -32,6 +35,7 @@ func Load() Config {
 		"15m",
 		"PostgreSQL max connection idle time",
 	)
+	flag.BoolVar(&cfg.Limiter.Enabled, "limiter-enabled", true, "Enable rate limiter")
 
 	flag.Parse()
 	return cfg

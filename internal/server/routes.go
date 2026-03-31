@@ -18,6 +18,7 @@ func setupRoutes(
 	postsHanlder *posts.Handler,
 ) http.Handler {
 	r := rush.New()
+	r.Use(middleware.Recover)
 
 	r.NotFound = http.HandlerFunc(responder.NotFound)
 	r.MethodNotAllowed = http.HandlerFunc(responder.MethodNotAllowed)
@@ -26,6 +27,9 @@ func setupRoutes(
 		r.Route("/r/{community_name}", func(r *rush.Router) {
 			r.Use(middleware.LoadCommunity(communitySvc))
 			postsHanlder.RegisterRoutes(r)
+
+			r.Group(func(r *rush.Router) {
+			})
 		})
 	})
 

@@ -71,3 +71,7 @@ func (r *Responder) DecodeError(w http.ResponseWriter, err error) {
 func (r *Responder) ValidationError(w http.ResponseWriter, errors map[string]string) {
 	r.Error(w, http.StatusUnprocessableEntity, errors)
 }
+
+func (r *Responder) TooManyRequests(w http.ResponseWriter, rq *http.Request) {
+	r.Error(w, http.StatusTooManyRequests, "too many requests")
+}

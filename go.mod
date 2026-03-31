@@ -5,4 +5,5 @@ go 1.25.5
 require (
 	github.com/0xrinful/rush v0.3.1 // indirect
 	github.com/lib/pq v1.12.0 // indirect
+	golang.org/x/time v0.15.0 // indirect
 )

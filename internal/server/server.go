@@ -26,7 +26,7 @@ func New(
 	logger *slog.Logger,
 ) *Server {
 	responder := response.NewResponder(logger)
-	middleware := middleware.New(responder)
+	middleware := middleware.New(responder, cfg)
 
 	postsHandler := posts.NewHandler(postsSvc, responder)
 	router := setupRoutes(responder, middleware, communitiesSvc, postsHandler)
