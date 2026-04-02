@@ -26,9 +26,18 @@ func setupRoutes(
 	r.Route("/api/v1", func(r *rush.Router) {
 		r.Route("/r/{community_name}", func(r *rush.Router) {
 			r.Use(middleware.LoadCommunity(communitySvc))
-			postsHanlder.RegisterRoutes(r)
 
 			r.Group(func(r *rush.Router) {
+				r.Use(middleware.ReadLimit())
+				r.Get("/posts", postsHanlder.List)
+				r.Get("/posts/{id}", postsHanlder.Get)
+			})
+
+			r.Group(func(r *rush.Router) {
+				r.Use(middleware.WriteLimit())
+				r.Post("/posts", postsHanlder.Create)
+				r.Delete("/posts/{id}", postsHanlder.Delete)
+				r.Patch("/posts/{id}", postsHanlder.Update)
 			})
 		})
 	})

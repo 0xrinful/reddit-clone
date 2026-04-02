@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/0xrinful/rush"
-
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
@@ -21,14 +19,6 @@ type Handler struct {
 
 func NewHandler(svc Service, responder *response.Responder) *Handler {
 	return &Handler{svc, responder}
-}
-
-func (h *Handler) RegisterRoutes(r *rush.Router) {
-	r.Post("/posts", h.Create)
-	r.Get("/posts", h.List)
-	r.Get("/posts/{id}", h.Get)
-	r.Delete("/posts/{id}", h.Delete)
-	r.Patch("/posts/{id}", h.Update)
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {

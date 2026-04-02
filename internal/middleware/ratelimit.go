@@ -19,22 +19,18 @@ func (m *Middleware) RateLimit(requests int, per time.Duration) func(http.Handle
 		return func(next http.Handler) http.Handler { return next }
 	}
 
-	var (
-		mu      sync.Mutex
-		clients = make(map[string]*client)
-	)
+	var clients sync.Map
 
 	go func() {
 		for {
-			time.Sleep(time.Minute)
-
-			mu.Lock()
-			for key, client := range clients {
-				if time.Since(client.lastSeen) > time.Minute*5 {
-					delete(clients, key)
+			time.Sleep(5 * time.Minute)
+			clients.Range(func(key, value any) bool {
+				c := value.(*client)
+				if time.Since(c.lastSeen) > time.Minute*5 {
+					clients.Delete(key)
 				}
-			}
-			mu.Unlock()
+				return true
+			})
 		}
 	}()
 
@@ -42,21 +38,25 @@ func (m *Middleware) RateLimit(requests int, per time.Duration) func(http.Handle
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			k := key(r)
 
-			mu.Lock()
-			if _, found := clients[k]; !found {
-				clients[k] = &client{
-					limiter: rate.NewLimiter(rate.Every(per/time.Duration(requests)), requests),
+			val, loaded := clients.Load(k)
+			if !loaded {
+				newClient := &client{
+					limiter: rate.NewLimiter(
+						rate.Limit(requests)/rate.Limit(per.Seconds()),
+						requests,
+					),
+					lastSeen: time.Now(),
 				}
+
+				val, _ = clients.LoadOrStore(k, newClient)
 			}
-			c := clients[k]
+			c := val.(*client)
 			c.lastSeen = time.Now()
 
 			if !c.limiter.Allow() {
-				mu.Unlock()
 				m.responder.TooManyRequests(w, r)
 				return
 			}
-			mu.Unlock()
 
 			next.ServeHTTP(w, r)
 		})
