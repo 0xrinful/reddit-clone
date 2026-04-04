@@ -3,7 +3,8 @@ package errs
 import "errors"
 
 var (
-	ErrEditConflict = errors.New("edit conflict")
-	ErrNotFound     = errors.New("not found")
-	ErrDuplicate    = errors.New("duplicate")
+	ErrEditConflict      = errors.New("edit conflict")
+	ErrNotFound          = errors.New("not found")
+	ErrDuplicateEmail    = errors.New("duplicate email")
+	ErrDuplicateUsername = errors.New("duplicate username")
 )
