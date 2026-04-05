@@ -9,6 +9,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/middleware"
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
+	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
 func setupRoutes(
@@ -16,6 +17,7 @@ func setupRoutes(
 	middleware *middleware.Middleware,
 	communitySvc communities.Service,
 	postsHanlder *posts.Handler,
+	usersHanlder *users.Handler,
 ) http.Handler {
 	r := rush.New()
 	r.Use(middleware.Recover)
@@ -39,6 +41,11 @@ func setupRoutes(
 				r.Delete("/posts/{id}", postsHanlder.Delete)
 				r.Patch("/posts/{id}", postsHanlder.Update)
 			})
+		})
+
+		r.Group(func(r *rush.Router) {
+			r.Use(middleware.AuthLimit())
+			r.Post("/auth/register", usersHanlder.RegisterUser)
 		})
 	})
 

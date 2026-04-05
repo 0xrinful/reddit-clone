@@ -14,3 +14,9 @@
 │           └── POST             → create comment (+ auth)
 └── users/{username}/
     └── GET       
+
+auth/
+├── POST /auth/register
+├── POST /auth/login
+├── POST /auth/logout   (you’re missing this)
+└── POST /auth/refresh  (if using tokens)

@@ -15,6 +15,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/server"
+	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
 func main() {
@@ -32,11 +33,13 @@ func main() {
 
 	communitiesRepo := communities.NewRepository(db)
 	postsRepo := posts.NewRepository(db)
+	usersRepo := users.NewRepository(db)
 
 	communitiesSvc := communities.NewService(communitiesRepo)
 	postsSvc := posts.NewService(postsRepo)
+	usersSvc := users.NewService(usersRepo)
 
-	srv := server.New(cfg, communitiesSvc, postsSvc, logger)
+	srv := server.New(cfg, logger, communitiesSvc, postsSvc, usersSvc)
 
 	// graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
