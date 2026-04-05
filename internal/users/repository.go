@@ -27,14 +27,15 @@ func (r *postgresRepository) Create(ctx context.Context, u *User) error {
 	query := `
 		INSERT INTO users (username, email, hashed_password) 
 		VALUES ($1, $2, $3)
-		RETURNING created_at, version, activated`
+		RETURNING id, created_at, version, activated`
 
-	args := []any{u.ID, u.Username, u.Email, u.Password.hash}
+	args := []any{u.Username, u.Email, u.Password.hash}
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, args...).Scan(&u.CreatedAt, &u.Version, u.Activated)
+	err := r.db.QueryRowContext(ctx, query, args...).
+		Scan(&u.ID, &u.CreatedAt, &u.Version, &u.Activated)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {

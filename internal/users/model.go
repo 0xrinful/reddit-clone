@@ -1,10 +1,9 @@
 package users
 
 import (
-	"errors"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/alexedwards/argon2id"
 )
 
 type User struct {
@@ -20,31 +19,20 @@ type User struct {
 }
 
 type Password struct {
-	plain *string
-	hash  []byte
+	hash string
 }
 
 func (p *Password) Set(plain string) error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(plain), 12)
+	hash, err := argon2id.CreateHash(plain, argon2id.DefaultParams)
 	if err != nil {
 		return err
 	}
-
-	p.plain = &plain
 	p.hash = hash
 	return nil
 }
 
 func (p *Password) Match(plain string) (bool, error) {
-	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plain))
-	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-		return false, nil
-	}
-
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return argon2id.ComparePasswordAndHash(plain, p.hash)
 }
 
 type CreateUserParams struct {

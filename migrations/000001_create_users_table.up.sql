@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS users (
   id BIGSERIAL PRIMARY KEY,
   username CITEXT NOT NULL UNIQUE,
   email CITEXT NOT NULL UNIQUE,
-  hashed_password BYTEA NOT NULL,
+  hashed_password TEXT NOT NULL,
   avatar_url TEXT,
   created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
   version INTEGER NOT NULL DEFAULT 1
