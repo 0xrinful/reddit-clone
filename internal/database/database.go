@@ -10,6 +10,12 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/config"
 )
 
+type DB interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
 func Open(cfg config.Config) (*sql.DB, error) {
 	db, err := sql.Open("postgres", cfg.DB.DSN)
 	if err != nil {

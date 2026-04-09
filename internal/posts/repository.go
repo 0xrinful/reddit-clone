@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/query"
 )
@@ -18,12 +19,12 @@ type Repository interface {
 	List(ctx context.Context, params ListPostParams) ([]*Post, error)
 }
 
-func NewRepository(db *sql.DB) Repository {
+func NewRepository(db database.DB) Repository {
 	return &postgresRepository{db}
 }
 
 type postgresRepository struct {
-	db *sql.DB
+	db database.DB
 }
 
 func (r *postgresRepository) Get(ctx context.Context, id, CommunityID int64) (*Post, error) {

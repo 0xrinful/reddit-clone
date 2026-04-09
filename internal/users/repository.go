@@ -2,12 +2,12 @@ package users
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
 	"github.com/lib/pq"
 
+	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
@@ -15,12 +15,12 @@ type Repository interface {
 	Create(ctx context.Context, u *User) error
 }
 
-func NewRepository(db *sql.DB) Repository {
+func NewRepository(db database.DB) Repository {
 	return &postgresRepository{db: db}
 }
 
 type postgresRepository struct {
-	db *sql.DB
+	db database.DB
 }
 
 func (r *postgresRepository) Create(ctx context.Context, u *User) error {
