@@ -23,7 +23,7 @@ type ActivateUserRequest struct {
 }
 
 func (r *ActivateUserRequest) Validate(v *validator.Validator) {
-	validator.ValidateToken(v, r.Token)
+	v.Check(r.Token != "", "token", "must be provided")
 }
 
 // response envelope

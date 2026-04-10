@@ -94,7 +94,7 @@ func (r *postgresRepository) GetByEmail(ctx context.Context, email string) (*Use
 func (r *postgresRepository) SetActivated(ctx context.Context, userID int64) error {
 	query := `
 		UPDATE users SET activated = true, activated_at = NOW()
-		WHERE user_id = $1`
+		WHERE id = $1 and activated = false`
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()

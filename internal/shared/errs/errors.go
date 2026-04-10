@@ -8,4 +8,5 @@ var (
 	ErrDuplicateEmail    = errors.New("duplicate email")
 	ErrDuplicateUsername = errors.New("duplicate username")
 	ErrAlreadyActivated  = errors.New("already activated")
+	ErrInvalidToken      = errors.New("invalid or expired token")
 )

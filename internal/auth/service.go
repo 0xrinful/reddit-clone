@@ -16,6 +16,7 @@ import (
 type Service interface {
 	RegisterUser(ctx context.Context, params CreateUserParams) (*users.User, error)
 	SendActivationEmail(ctx context.Context, email string) error
+	ActivateUser(ctx context.Context, plaintext string) error
 }
 
 func NewService(
@@ -97,6 +98,25 @@ func (s *service) RegisterUser(ctx context.Context, params CreateUserParams) (*u
 }
 
 func (s *service) ActivateUser(ctx context.Context, plaintext string) error {
+	hashed := tokens.Hash(plaintext)
+	token, err := s.tokenRepo.GetByHash(ctx, tokens.ScopeActivation, hashed)
+	if err != nil {
+		return err
+	}
+
+	if time.Now().After(token.Expiry) {
+		return errs.ErrInvalidToken
+	}
+
+	err = s.userRepo.SetActivated(ctx, token.UserID)
+	if err != nil {
+		return err
+	}
+
+	if err = s.tokenRepo.DeleteAllForUser(ctx, tokens.ScopeActivation, token.UserID); err != nil {
+		s.logger.Error("failed to delete activation tokens", "userID", token.UserID, "error", err)
+	}
+
 	return nil
 }
 

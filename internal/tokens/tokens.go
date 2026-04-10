@@ -14,14 +14,18 @@ func Generate(userID int64, ttl time.Duration, scope string) (*Token, error) {
 		return nil, err
 	}
 	plain := base64.RawURLEncoding.EncodeToString(b)
-	hash := sha256.Sum256([]byte(plain))
-	hashString := hex.EncodeToString(hash[:])
+	hash := Hash(plain)
 
 	return &Token{
 		Plaintext: plain,
-		Hash:      hashString,
+		Hash:      hash,
 		UserID:    userID,
 		Expiry:    time.Now().Add(ttl).UTC(),
 		Scope:     scope,
 	}, nil
+}
+
+func Hash(plaintext string) string {
+	hash := sha256.Sum256([]byte(plaintext))
+	return hex.EncodeToString(hash[:])
 }

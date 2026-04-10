@@ -57,3 +57,33 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	h.responder.JSON(w, http.StatusCreated, toRegisterUserResponse(user))
 }
+
+func (h *Handler) ActivateUser(w http.ResponseWriter, r *http.Request) {
+	var input ActivateUserRequest
+
+	err := request.DecodeJSON(w, r, &input)
+	if err != nil {
+		h.responder.DecodeError(w, err)
+		return
+	}
+
+	v := validator.New()
+	if input.Validate(v); !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	err = h.service.ActivateUser(r.Context(), input.Token)
+	if err != nil {
+		switch {
+		case errors.Is(err, errs.ErrInvalidToken):
+			v.AddError("token", "invalid or expired token")
+			h.responder.ValidationError(w, v.Errors)
+		default:
+			h.responder.ServerError(w, err)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
