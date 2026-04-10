@@ -34,9 +34,3 @@ func (p *Password) Set(plain string) error {
 func (p *Password) Match(plain string) (bool, error) {
 	return argon2id.ComparePasswordAndHash(plain, p.hash)
 }
-
-type CreateUserParams struct {
-	Username      string
-	Email         string
-	PlainPassword string
-}
