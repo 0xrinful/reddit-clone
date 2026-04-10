@@ -11,6 +11,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/config"
 	"github.com/0xrinful/reddit-clone/internal/middleware"
 	"github.com/0xrinful/reddit-clone/internal/posts"
+	"github.com/0xrinful/reddit-clone/internal/shared/background"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
 	"github.com/0xrinful/reddit-clone/internal/users"
 )
@@ -18,11 +19,13 @@ import (
 type Server struct {
 	httpServer *http.Server
 	logger     *slog.Logger
+	background *background.Worker
 }
 
 func New(
 	cfg config.Config,
 	logger *slog.Logger,
+	background *background.Worker,
 	communitiesSvc communities.Service,
 	postsSvc posts.Service,
 	usersSvc users.Service,
@@ -46,7 +49,8 @@ func New(
 			WriteTimeout: 30 * time.Second,
 			IdleTimeout:  60 * time.Second,
 		},
-		logger: logger,
+		logger:     logger,
+		background: background,
 	}
 }
 
@@ -56,5 +60,12 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	return s.httpServer.Shutdown(ctx)
+	if err := s.httpServer.Shutdown(ctx); err != nil {
+		return err
+	}
+
+	s.logger.Info("waiting for background tasks to finish...")
+	s.background.Wait()
+	s.logger.Info("all tasks finished, exiting")
+	return nil
 }
