@@ -6,26 +6,6 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/shared/validator"
 )
 
-// validation helpers
-const (
-	postTitleMin = 3
-	postTitleMax = 120
-	postBodyMin  = 10
-	postBodyMax  = 40000
-)
-
-func validateTitle(v *validator.Validator, title string) {
-	v.Check(validator.NotBlank(title), "title", "must not be blank")
-	v.Check(validator.MinLength(title, postTitleMin), "title", "must be at least 3 characters")
-	v.Check(validator.MaxLength(title, postTitleMax), "title", "must not exceed 120 characters")
-}
-
-func validateBody(v *validator.Validator, body string) {
-	v.Check(validator.NotBlank(body), "body", "must not be blank")
-	v.Check(validator.MinLength(body, postBodyMin), "body", "must be at least 10 characters")
-	v.Check(validator.MaxLength(body, postBodyMax), "body", "must not exceed 40000 characters")
-}
-
 // request structs
 type CreatePostRequest struct {
 	Title string `json:"title"`
@@ -33,8 +13,8 @@ type CreatePostRequest struct {
 }
 
 func (r *CreatePostRequest) Validate(v *validator.Validator) {
-	validateTitle(v, r.Title)
-	validateBody(v, r.Body)
+	validator.ValidatePostTitle(v, r.Title)
+	validator.ValidatePostBody(v, r.Body)
 }
 
 type UpdatePostRequest struct {
@@ -48,10 +28,10 @@ func (r *UpdatePostRequest) Validate(v *validator.Validator) {
 		return
 	}
 	if r.Title != nil {
-		validateTitle(v, *r.Title)
+		validator.ValidatePostTitle(v, *r.Title)
 	}
 	if r.Body != nil {
-		validateBody(v, *r.Body)
+		validator.ValidatePostBody(v, *r.Body)
 	}
 }
 
