@@ -15,6 +15,14 @@ type Config struct {
 	Limiter struct {
 		Enabled bool
 	}
+
+	SMTP struct {
+		Host     string
+		Port     int
+		Username string
+		Password string
+		Sender   string
+	}
 }
 
 func Load() Config {
@@ -36,6 +44,17 @@ func Load() Config {
 		"PostgreSQL max connection idle time",
 	)
 	flag.BoolVar(&cfg.Limiter.Enabled, "limiter-enabled", true, "Enable rate limiter")
+
+	flag.StringVar(&cfg.SMTP.Host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.SMTP.Port, "smtp-port", 587, "SMTP port")
+	flag.StringVar(&cfg.SMTP.Username, "smtp-username", "a6c1c8aae0c428", "SMTP username")
+	flag.StringVar(&cfg.SMTP.Password, "smtp-password", "94f0915667c9ab", "SMTP password")
+	flag.StringVar(
+		&cfg.SMTP.Sender,
+		"smtp-sender",
+		"Reddit-Clone <no-reply@reddit-clone.com>",
+		"SMTP sender",
+	)
 
 	flag.Parse()
 	return cfg
