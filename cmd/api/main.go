@@ -10,17 +10,23 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/0xrinful/reddit-clone/internal/auth"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
 	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/server"
+	"github.com/0xrinful/reddit-clone/internal/shared/background"
+	"github.com/0xrinful/reddit-clone/internal/shared/mailer"
+	"github.com/0xrinful/reddit-clone/internal/tokens"
 	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
 func main() {
 	cfg := config.Load()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	mailer := mailer.New(cfg)
+	bg := background.New(logger)
 
 	db, err := database.Open(cfg)
 	if err != nil {
@@ -34,12 +40,14 @@ func main() {
 	communitiesRepo := communities.NewRepository(db)
 	postsRepo := posts.NewRepository(db)
 	usersRepo := users.NewRepository(db)
+	tokensRepo := tokens.NewRepository(db)
 
 	communitiesSvc := communities.NewService(communitiesRepo)
 	postsSvc := posts.NewService(postsRepo)
 	usersSvc := users.NewService(usersRepo)
+	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)
 
-	srv := server.New(cfg, logger, communitiesSvc, postsSvc, usersSvc)
+	srv := server.New(cfg, logger, bg, communitiesSvc, postsSvc, usersSvc, authSvc)
 
 	// graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

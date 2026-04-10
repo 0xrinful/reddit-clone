@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/0xrinful/reddit-clone/internal/auth"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
 	"github.com/0xrinful/reddit-clone/internal/middleware"
@@ -29,13 +30,18 @@ func New(
 	communitiesSvc communities.Service,
 	postsSvc posts.Service,
 	usersSvc users.Service,
+	authSvc auth.Service,
 ) *Server {
 	responder := response.NewResponder(logger)
 	middleware := middleware.New(responder, cfg)
 
 	postsHandler := posts.NewHandler(postsSvc, responder)
 	usersHandler := users.NewHandler(usersSvc, responder)
-	router := setupRoutes(responder, middleware, communitiesSvc, postsHandler, usersHandler)
+	authHandler := auth.NewHandler(authSvc, responder)
+	router := setupRoutes(
+		responder, middleware, communitiesSvc,
+		postsHandler, usersHandler, authHandler,
+	)
 
 	// bridge slog → *log.Logger for http.Server
 	errLog := slog.NewLogLogger(logger.Handler(), slog.LevelError)

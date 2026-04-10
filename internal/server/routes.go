@@ -5,6 +5,7 @@ import (
 
 	"github.com/0xrinful/rush"
 
+	"github.com/0xrinful/reddit-clone/internal/auth"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/middleware"
 	"github.com/0xrinful/reddit-clone/internal/posts"
@@ -18,6 +19,7 @@ func setupRoutes(
 	communitySvc communities.Service,
 	postsHanlder *posts.Handler,
 	usersHanlder *users.Handler,
+	authHanlder *auth.Handler,
 ) http.Handler {
 	r := rush.New()
 	r.Use(middleware.Recover)
@@ -45,7 +47,7 @@ func setupRoutes(
 
 		r.Group(func(r *rush.Router) {
 			r.Use(middleware.AuthLimit())
-			r.Post("/auth/register", usersHanlder.RegisterUser)
+			r.Post("/auth/register", authHanlder.RegisterUser)
 		})
 	})
 
