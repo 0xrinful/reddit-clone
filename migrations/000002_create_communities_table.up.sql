@@ -6,3 +6,5 @@ CREATE TABLE IF NOT EXISTS communities (
   created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
   version INTEGER NOT NULL DEFAULT 1
 );
+
+CREATE INDEX IF NOT EXISTS idx_communities_name ON communities (name);

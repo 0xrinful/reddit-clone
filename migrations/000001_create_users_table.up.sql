@@ -5,5 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   hashed_password TEXT NOT NULL,
   avatar_url TEXT,
   created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  activated BOOLEAN NOT NULL DEFAULT FALSE,
+  activated_at TIMESTAMP(0) WITH TIME ZONE,
   version INTEGER NOT NULL DEFAULT 1
 );

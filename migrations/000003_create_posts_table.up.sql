@@ -12,3 +12,5 @@ CREATE TABLE IF NOT EXISTS posts (
 CREATE INDEX IF NOT EXISTS idx_posts_community_id ON posts (community_id);
 
 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts (user_id);
+
+CREATE INDEX IF NOT EXISTS idx_posts_created_at_id ON posts (created_at DESC, id DESC);
