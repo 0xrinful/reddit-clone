@@ -1,4 +1,4 @@
-package tokens
+package action
 
 import (
 	"context"
@@ -10,16 +10,10 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
-const (
-	ScopeActivation    = "activation"
-	ScopeAuth          = "auth"
-	ScopePasswordReset = "password-reset"
-)
-
 type Repository interface {
 	Insert(ctx context.Context, token *Token) error
 	DeleteAllForUser(ctx context.Context, scope string, userID int64) error
-	GetByHash(ctx context.Context, scope string, hashed string) (*Token, error)
+	GetByHash(ctx context.Context, scope string, hashed []byte) (*Token, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -32,7 +26,7 @@ type postgresRepository struct {
 
 func (r *postgresRepository) Insert(ctx context.Context, token *Token) error {
 	query := `
-		INSERT INTO tokens (hash, user_id, expiry, scope) 
+		INSERT INTO action_tokens (hash, user_id, expiry, scope) 
 		VALUES ($1, $2, $3, $4)`
 
 	args := []any{token.Hash, token.UserID, token.Expiry, token.Scope}
@@ -49,7 +43,7 @@ func (r *postgresRepository) DeleteAllForUser(
 	scope string,
 	userID int64,
 ) error {
-	query := `DELETE FROM tokens WHERE user_id = $1 AND scope = $2`
+	query := `DELETE FROM action_tokens WHERE user_id = $1 AND scope = $2`
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
@@ -61,10 +55,10 @@ func (r *postgresRepository) DeleteAllForUser(
 func (r *postgresRepository) GetByHash(
 	ctx context.Context,
 	scope string,
-	hashed string,
+	hashed []byte,
 ) (*Token, error) {
 	query := `
-		SELECT hash, user_id, expiry, scope FROM tokens
+		SELECT hash, user_id, expiry, scope FROM action_tokens
 		WHERE hash = $1 AND scope = $2`
 
 	var token Token

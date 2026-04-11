@@ -10,6 +10,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/mailer"
 	"github.com/0xrinful/reddit-clone/internal/tokens"
+	"github.com/0xrinful/reddit-clone/internal/tokens/action"
 	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
@@ -22,7 +23,7 @@ type Service interface {
 func NewService(
 	db *sql.DB,
 	userRepo users.Repository,
-	tokenRepo tokens.Repository,
+	tokenRepo action.Repository,
 	mailer *mailer.Mailer,
 	logger *slog.Logger,
 	background *background.Worker,
@@ -40,7 +41,7 @@ func NewService(
 type service struct {
 	db         *sql.DB
 	userRepo   users.Repository
-	tokenRepo  tokens.Repository
+	tokenRepo  action.Repository
 	mailer     *mailer.Mailer
 	logger     *slog.Logger
 	background *background.Worker
@@ -70,14 +71,14 @@ func (s *service) RegisterUser(ctx context.Context, params CreateUserParams) (*u
 	defer tx.Rollback()
 
 	userRepo := users.NewRepository(tx)
-	tokenRepo := tokens.NewRepository(tx)
+	tokenRepo := action.NewRepository(tx)
 
 	err = userRepo.Create(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := tokens.Generate(user.ID, 24*time.Hour, tokens.ScopeActivation)
+	token, err := action.Generate(user.ID, 24*time.Hour, action.ScopeActivation)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +100,7 @@ func (s *service) RegisterUser(ctx context.Context, params CreateUserParams) (*u
 
 func (s *service) ActivateUser(ctx context.Context, plaintext string) error {
 	hashed := tokens.Hash(plaintext)
-	token, err := s.tokenRepo.GetByHash(ctx, tokens.ScopeActivation, hashed)
+	token, err := s.tokenRepo.GetByHash(ctx, action.ScopeActivation, hashed)
 	if err != nil {
 		return err
 	}
@@ -113,7 +114,11 @@ func (s *service) ActivateUser(ctx context.Context, plaintext string) error {
 		return err
 	}
 
-	if err = s.tokenRepo.DeleteAllForUser(ctx, tokens.ScopeActivation, token.UserID); err != nil {
+	if err = s.tokenRepo.DeleteAllForUser(
+		ctx,
+		action.ScopeActivation,
+		token.UserID,
+	); err != nil {
 		s.logger.Error("failed to delete activation tokens", "userID", token.UserID, "error", err)
 	}
 
@@ -128,7 +133,7 @@ func (s *service) SendActivationEmail(ctx context.Context, email string) error {
 	defer tx.Rollback()
 
 	userRepo := users.NewRepository(tx)
-	tokenRepo := tokens.NewRepository(tx)
+	tokenRepo := action.NewRepository(tx)
 
 	user, err := userRepo.GetByEmail(ctx, email)
 	if err != nil {
@@ -139,12 +144,12 @@ func (s *service) SendActivationEmail(ctx context.Context, email string) error {
 		return errs.ErrAlreadyActivated
 	}
 
-	token, err := tokens.Generate(user.ID, 24*time.Hour, tokens.ScopeActivation)
+	token, err := action.Generate(user.ID, 24*time.Hour, action.ScopeActivation)
 	if err != nil {
 		return err
 	}
 
-	if err = tokenRepo.DeleteAllForUser(ctx, tokens.ScopeActivation, user.ID); err != nil {
+	if err = tokenRepo.DeleteAllForUser(ctx, action.ScopeActivation, user.ID); err != nil {
 		return err
 	}
 
