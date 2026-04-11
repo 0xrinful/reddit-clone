@@ -10,50 +10,65 @@ import (
 )
 
 type client struct {
-	limiter  *rate.Limiter
+	mu       sync.Mutex
+	limiters map[string]*rate.Limiter
 	lastSeen time.Time
 }
 
-func (m *Middleware) RateLimit(requests int, per time.Duration) func(http.Handler) http.Handler {
+func (m *Middleware) startClientCleanup() {
+	if !m.config.Limiter.Enabled {
+		return
+	}
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		m.mu.Lock()
+		for k, c := range m.clients {
+			if time.Since(c.lastSeen) > 5*time.Minute {
+				delete(m.clients, k)
+			}
+		}
+		m.mu.Unlock()
+	}
+}
+
+func (m *Middleware) RateLimit(
+	name string,
+	requests int,
+	per time.Duration,
+) func(http.Handler) http.Handler {
 	if !m.config.Limiter.Enabled {
 		return func(next http.Handler) http.Handler { return next }
 	}
-
-	var clients sync.Map
-
-	go func() {
-		for {
-			time.Sleep(5 * time.Minute)
-			clients.Range(func(key, value any) bool {
-				c := value.(*client)
-				if time.Since(c.lastSeen) > time.Minute*5 {
-					clients.Delete(key)
-				}
-				return true
-			})
-		}
-	}()
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			k := key(r)
 
-			val, loaded := clients.Load(k)
-			if !loaded {
-				newClient := &client{
-					limiter: rate.NewLimiter(
-						rate.Limit(requests)/rate.Limit(per.Seconds()),
-						requests,
-					),
-					lastSeen: time.Now(),
+			m.mu.RLock()
+			c, exists := m.clients[k]
+			m.mu.RUnlock()
+
+			if !exists {
+				m.mu.Lock()
+				if c, exists = m.clients[k]; !exists {
+					c = &client{limiters: make(map[string]*rate.Limiter), lastSeen: time.Now()}
+					m.clients[k] = c
 				}
-
-				val, _ = clients.LoadOrStore(k, newClient)
+				m.mu.Unlock()
 			}
-			c := val.(*client)
-			c.lastSeen = time.Now()
 
-			if !c.limiter.Allow() {
+			c.mu.Lock()
+			c.lastSeen = time.Now()
+			limiter, exists := c.limiters[name]
+			if !exists {
+				limiter = rate.NewLimiter(rate.Limit(requests)/rate.Limit(per.Seconds()), requests)
+				c.limiters[name] = limiter
+			}
+			c.mu.Unlock()
+
+			if !limiter.Allow() {
 				m.responder.TooManyRequests(w, r)
 				return
 			}
@@ -64,15 +79,15 @@ func (m *Middleware) RateLimit(requests int, per time.Duration) func(http.Handle
 }
 
 func (m *Middleware) ReadLimit() func(http.Handler) http.Handler {
-	return m.RateLimit(200, time.Minute)
+	return m.RateLimit("read", 200, time.Minute)
 }
 
 func (m *Middleware) WriteLimit() func(http.Handler) http.Handler {
-	return m.RateLimit(30, time.Minute)
+	return m.RateLimit("write", 30, time.Minute)
 }
 
-func (m *Middleware) AuthLimit() func(http.Handler) http.Handler {
-	return m.RateLimit(5, time.Minute)
+func (m *Middleware) StrictLimit() func(http.Handler) http.Handler {
+	return m.RateLimit("strict", 5, time.Minute*10)
 }
 
 func key(r *http.Request) string {

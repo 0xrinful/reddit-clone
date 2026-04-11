@@ -46,11 +46,9 @@ func setupRoutes(
 		})
 
 		r.Group(func(r *rush.Router) {
-			r.Use(middleware.AuthLimit())
+			r.Use(middleware.StrictLimit())
 			r.Post("/auth/register", authHanlder.RegisterUser)
-		})
 
-		r.Group(func(r *rush.Router) {
 			r.Post("/auth/email/verify", authHanlder.ActivateUser)
 			r.Post("/auth/email/verify/resend", authHanlder.SendActivationEmail)
 		})
