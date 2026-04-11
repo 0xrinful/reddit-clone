@@ -87,3 +87,28 @@ func (h *Handler) ActivateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *Handler) SendActivationEmail(w http.ResponseWriter, r *http.Request) {
+	var input SendActivationEmailRequest
+
+	err := request.DecodeJSON(w, r, &input)
+	if err != nil {
+		h.responder.DecodeError(w, err)
+		return
+	}
+
+	v := validator.New()
+	if input.Validate(v); !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	err = h.service.SendActivationEmail(r.Context(), input.Email)
+	if err != nil && !errors.Is(err, errs.ErrNotFound) &&
+		!errors.Is(err, errs.ErrAlreadyActivated) {
+		h.responder.ServerError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

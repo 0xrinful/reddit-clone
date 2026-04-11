@@ -52,6 +52,7 @@ func setupRoutes(
 
 		r.Group(func(r *rush.Router) {
 			r.Post("/auth/email/verify", authHanlder.ActivateUser)
+			r.Post("/auth/email/verify/resend", authHanlder.SendActivationEmail)
 		})
 	})
 

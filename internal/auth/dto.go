@@ -26,6 +26,14 @@ func (r *ActivateUserRequest) Validate(v *validator.Validator) {
 	v.Check(r.Token != "", "token", "must be provided")
 }
 
+type SendActivationEmailRequest struct {
+	Email string `json:"email"`
+}
+
+func (r *SendActivationEmailRequest) Validate(v *validator.Validator) {
+	v.Check(r.Email != "", "email", "must be provided")
+}
+
 // response envelope
 type RegisterUserResponse struct {
 	User users.UserOwnerDTO `json:"user"`
