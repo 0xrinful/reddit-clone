@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS action_tokens (
+CREATE TABLE IF NOT EXISTS tokens (
   id BIGSERIAL PRIMARY KEY,
   hash BYTEA NOT NULL UNIQUE,
   user_id BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS action_tokens (
   created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_action_tokens_user_id_scope ON action_tokens (user_id, scope);
+CREATE INDEX IF NOT EXISTS idx_tokens_user_id_scope ON tokens (user_id, scope);
