@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"os"
 )
 
 type Config struct {
@@ -12,6 +13,7 @@ type Config struct {
 		MaxIdleConns int
 		MaxIdleTime  string
 	}
+
 	Limiter struct {
 		Enabled bool
 	}
@@ -23,6 +25,7 @@ type Config struct {
 		Password string
 		Sender   string
 	}
+	JWTSecret string
 }
 
 func Load() Config {
@@ -47,14 +50,16 @@ func Load() Config {
 
 	flag.StringVar(&cfg.SMTP.Host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
 	flag.IntVar(&cfg.SMTP.Port, "smtp-port", 587, "SMTP port")
-	flag.StringVar(&cfg.SMTP.Username, "smtp-username", "a6c1c8aae0c428", "SMTP username")
-	flag.StringVar(&cfg.SMTP.Password, "smtp-password", "94f0915667c9ab", "SMTP password")
+	flag.StringVar(&cfg.SMTP.Username, "smtp-username", "17e7914803f235", "SMTP username")
+	flag.StringVar(&cfg.SMTP.Password, "smtp-password", "afef433d663144", "SMTP password")
 	flag.StringVar(
 		&cfg.SMTP.Sender,
 		"smtp-sender",
 		"Reddit-Clone <no-reply@reddit-clone.com>",
 		"SMTP sender",
 	)
+
+	flag.StringVar(&cfg.JWTSecret, "jwt-secret", os.Getenv("JWT_SECRET"), "JWT Secret")
 
 	flag.Parse()
 	return cfg

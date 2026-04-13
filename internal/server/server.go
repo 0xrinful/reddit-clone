@@ -14,6 +14,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/shared/background"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
+	"github.com/0xrinful/reddit-clone/internal/tokens"
 	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
@@ -31,13 +32,14 @@ func New(
 	postsSvc posts.Service,
 	usersSvc users.Service,
 	authSvc auth.Service,
+	tokensSvc tokens.Service,
 ) *Server {
 	responder := response.NewResponder(logger)
 	middleware := middleware.New(responder, cfg)
 
 	postsHandler := posts.NewHandler(postsSvc, responder)
 	usersHandler := users.NewHandler(usersSvc, responder)
-	authHandler := auth.NewHandler(authSvc, responder)
+	authHandler := auth.NewHandler(authSvc, tokensSvc, responder)
 	router := setupRoutes(
 		responder, middleware, communitiesSvc,
 		postsHandler, usersHandler, authHandler,

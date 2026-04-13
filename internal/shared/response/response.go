@@ -72,6 +72,14 @@ func (r *Responder) ValidationError(w http.ResponseWriter, errors map[string]str
 	r.Error(w, http.StatusUnprocessableEntity, errors)
 }
 
-func (r *Responder) TooManyRequests(w http.ResponseWriter, rq *http.Request) {
+func (r *Responder) TooManyRequests(w http.ResponseWriter) {
 	r.Error(w, http.StatusTooManyRequests, "too many requests")
+}
+
+func (r *Responder) InvalidCredentials(w http.ResponseWriter) {
+	r.Error(w, http.StatusUnauthorized, "invalid credentials")
+}
+
+func (r *Responder) InvalidToken(w http.ResponseWriter) {
+	r.Error(w, http.StatusUnauthorized, "invalid or expired token")
 }

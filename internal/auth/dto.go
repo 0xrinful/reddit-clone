@@ -34,12 +34,48 @@ func (r *SendActivationEmailRequest) Validate(v *validator.Validator) {
 	v.Check(r.Email != "", "email", "must be provided")
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (r *LoginRequest) Validate(v *validator.Validator) {
+	validator.ValidateEmail(v, r.Email)
+	validator.ValidatePassword(v, r.Password)
+}
+
+type RefreshRequest struct {
+	Token string `json:"refresh_token"`
+}
+
+func (r *RefreshRequest) Validate(v *validator.Validator) {
+	v.Check(r.Token != "", "token", "must be provided")
+}
+
 // response envelope
 type RegisterUserResponse struct {
 	User users.UserOwnerDTO `json:"user"`
 }
 
+type LoginResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type RefreshResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
 // response constructor
 func toRegisterUserResponse(u *users.User) RegisterUserResponse {
 	return RegisterUserResponse{User: users.ToUserOwnerDTO(u)}
+}
+
+func toLoginResponse(access, refresh string) LoginResponse {
+	return LoginResponse{AccessToken: access, RefreshToken: refresh}
+}
+
+func toRefreshResponse(access, refresh string) RefreshResponse {
+	return RefreshResponse{AccessToken: access, RefreshToken: refresh}
 }

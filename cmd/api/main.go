@@ -18,7 +18,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/server"
 	"github.com/0xrinful/reddit-clone/internal/shared/background"
 	"github.com/0xrinful/reddit-clone/internal/shared/mailer"
-	"github.com/0xrinful/reddit-clone/internal/tokens/action"
+	"github.com/0xrinful/reddit-clone/internal/tokens"
 	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
@@ -40,14 +40,20 @@ func main() {
 	communitiesRepo := communities.NewRepository(db)
 	postsRepo := posts.NewRepository(db)
 	usersRepo := users.NewRepository(db)
-	tokensRepo := action.NewRepository(db)
+	tokensRepo := tokens.NewRepository(db)
 
 	communitiesSvc := communities.NewService(communitiesRepo)
 	postsSvc := posts.NewService(postsRepo)
 	usersSvc := users.NewService(usersRepo)
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)
+	tokensSvc := tokens.NewService(
+		tokensRepo, []byte(cfg.JWTSecret),
+		30*24*time.Hour,
+		30*time.Minute,
+		db,
+	)
 
-	srv := server.New(cfg, logger, bg, communitiesSvc, postsSvc, usersSvc, authSvc)
+	srv := server.New(cfg, logger, bg, communitiesSvc, postsSvc, usersSvc, authSvc, tokensSvc)
 
 	// graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

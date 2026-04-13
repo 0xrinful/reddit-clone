@@ -1,4 +1,4 @@
-package action
+package tokens
 
 import (
 	"context"
@@ -14,6 +14,7 @@ type Repository interface {
 	Insert(ctx context.Context, token *Token) error
 	DeleteAllForUser(ctx context.Context, scope string, userID int64) error
 	GetByHash(ctx context.Context, scope string, hashed []byte) (*Token, error)
+	DeleteByHash(ctx context.Context, hash []byte) error
 }
 
 func NewRepository(db database.DB) Repository {
@@ -26,7 +27,7 @@ type postgresRepository struct {
 
 func (r *postgresRepository) Insert(ctx context.Context, token *Token) error {
 	query := `
-		INSERT INTO action_tokens (hash, user_id, expiry, scope) 
+		INSERT INTO tokens (hash, user_id, expiry, scope) 
 		VALUES ($1, $2, $3, $4)`
 
 	args := []any{token.Hash, token.UserID, token.Expiry, token.Scope}
@@ -43,7 +44,7 @@ func (r *postgresRepository) DeleteAllForUser(
 	scope string,
 	userID int64,
 ) error {
-	query := `DELETE FROM action_tokens WHERE user_id = $1 AND scope = $2`
+	query := `DELETE FROM tokens WHERE user_id = $1 AND scope = $2`
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
@@ -58,7 +59,7 @@ func (r *postgresRepository) GetByHash(
 	hashed []byte,
 ) (*Token, error) {
 	query := `
-		SELECT hash, user_id, expiry, scope FROM action_tokens
+		SELECT id, hash, user_id, expiry, scope FROM tokens
 		WHERE hash = $1 AND scope = $2`
 
 	var token Token
@@ -67,7 +68,7 @@ func (r *postgresRepository) GetByHash(
 	defer cancel()
 
 	err := r.db.QueryRowContext(ctx, query, hashed, scope).
-		Scan(&token.Hash, &token.UserID, &token.Expiry, &token.Scope)
+		Scan(&token.ID, &token.Hash, &token.UserID, &token.Expiry, &token.Scope)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errs.ErrInvalidToken
 	}
@@ -78,4 +79,14 @@ func (r *postgresRepository) GetByHash(
 
 	token.Expiry = token.Expiry.UTC()
 	return &token, nil
+}
+
+func (r *postgresRepository) DeleteByHash(ctx context.Context, hash []byte) error {
+	query := `DELETE FROM tokens WHERE hash = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
+	defer cancel()
+
+	_, err := r.db.ExecContext(ctx, query, hash)
+	return err
 }

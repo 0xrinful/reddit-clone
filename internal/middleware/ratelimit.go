@@ -69,7 +69,7 @@ func (m *Middleware) RateLimit(
 			c.mu.Unlock()
 
 			if !limiter.Allow() {
-				m.responder.TooManyRequests(w, r)
+				m.responder.TooManyRequests(w)
 				return
 			}
 
@@ -87,7 +87,7 @@ func (m *Middleware) WriteLimit() func(http.Handler) http.Handler {
 }
 
 func (m *Middleware) StrictLimit() func(http.Handler) http.Handler {
-	return m.RateLimit("strict", 5, time.Minute*10)
+	return m.RateLimit("strict", 10, time.Minute*5)
 }
 
 func key(r *http.Request) string {

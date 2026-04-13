@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/mailer"
 	"github.com/0xrinful/reddit-clone/internal/tokens"
-	"github.com/0xrinful/reddit-clone/internal/tokens/action"
 	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
@@ -18,12 +18,13 @@ type Service interface {
 	RegisterUser(ctx context.Context, params CreateUserParams) (*users.User, error)
 	SendActivationEmail(ctx context.Context, email string) error
 	ActivateUser(ctx context.Context, plaintext string) error
+	AuthenticateUser(ctx context.Context, email string, password string) (*users.User, error)
 }
 
 func NewService(
 	db *sql.DB,
 	userRepo users.Repository,
-	tokenRepo action.Repository,
+	tokenRepo tokens.Repository,
 	mailer *mailer.Mailer,
 	logger *slog.Logger,
 	background *background.Worker,
@@ -41,7 +42,7 @@ func NewService(
 type service struct {
 	db         *sql.DB
 	userRepo   users.Repository
-	tokenRepo  action.Repository
+	tokenRepo  tokens.Repository
 	mailer     *mailer.Mailer
 	logger     *slog.Logger
 	background *background.Worker
@@ -71,14 +72,14 @@ func (s *service) RegisterUser(ctx context.Context, params CreateUserParams) (*u
 	defer tx.Rollback()
 
 	userRepo := users.NewRepository(tx)
-	tokenRepo := action.NewRepository(tx)
+	tokenRepo := tokens.NewRepository(tx)
 
 	err = userRepo.Create(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := action.Generate(user.ID, 24*time.Hour, action.ScopeActivation)
+	token, err := tokens.Generate(user.ID, 24*time.Hour, tokens.ScopeActivation)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +93,7 @@ func (s *service) RegisterUser(ctx context.Context, params CreateUserParams) (*u
 	}
 
 	s.background.Run(func() {
-		s.sendActivation(user.ID, user.Email, user.Username, token.Plaintext)
+		s.deliverActivationEmail(user.ID, user.Email, user.Username, token.Plaintext)
 	})
 
 	return user, nil
@@ -100,7 +101,7 @@ func (s *service) RegisterUser(ctx context.Context, params CreateUserParams) (*u
 
 func (s *service) ActivateUser(ctx context.Context, plaintext string) error {
 	hashed := tokens.Hash(plaintext)
-	token, err := s.tokenRepo.GetByHash(ctx, action.ScopeActivation, hashed)
+	token, err := s.tokenRepo.GetByHash(ctx, tokens.ScopeActivation, hashed)
 	if err != nil {
 		return err
 	}
@@ -114,11 +115,7 @@ func (s *service) ActivateUser(ctx context.Context, plaintext string) error {
 		return err
 	}
 
-	if err = s.tokenRepo.DeleteAllForUser(
-		ctx,
-		action.ScopeActivation,
-		token.UserID,
-	); err != nil {
+	if err = s.tokenRepo.DeleteAllForUser(ctx, tokens.ScopeActivation, token.UserID); err != nil {
 		s.logger.Error("failed to delete activation tokens", "userID", token.UserID, "error", err)
 	}
 
@@ -133,7 +130,7 @@ func (s *service) SendActivationEmail(ctx context.Context, email string) error {
 	defer tx.Rollback()
 
 	userRepo := users.NewRepository(tx)
-	tokenRepo := action.NewRepository(tx)
+	tokenRepo := tokens.NewRepository(tx)
 
 	user, err := userRepo.GetByEmail(ctx, email)
 	if err != nil {
@@ -144,12 +141,12 @@ func (s *service) SendActivationEmail(ctx context.Context, email string) error {
 		return errs.ErrAlreadyActivated
 	}
 
-	token, err := action.Generate(user.ID, 24*time.Hour, action.ScopeActivation)
+	token, err := tokens.Generate(user.ID, 24*time.Hour, tokens.ScopeActivation)
 	if err != nil {
 		return err
 	}
 
-	if err = tokenRepo.DeleteAllForUser(ctx, action.ScopeActivation, user.ID); err != nil {
+	if err = tokenRepo.DeleteAllForUser(ctx, tokens.ScopeActivation, user.ID); err != nil {
 		return err
 	}
 
@@ -162,13 +159,13 @@ func (s *service) SendActivationEmail(ctx context.Context, email string) error {
 	}
 
 	s.background.Run(func() {
-		s.sendActivation(user.ID, user.Email, user.Username, token.Plaintext)
+		s.deliverActivationEmail(user.ID, user.Email, user.Username, token.Plaintext)
 	})
 
 	return nil
 }
 
-func (s *service) sendActivation(userID int64, email, username, plaintext string) {
+func (s *service) deliverActivationEmail(userID int64, email, username, plaintext string) {
 	err := s.mailer.Send(email, "activation.html", map[string]any{
 		"Username":      username,
 		"ActivationURL": "https://app.com/verify?token=" + plaintext,
@@ -176,4 +173,29 @@ func (s *service) sendActivation(userID int64, email, username, plaintext string
 	if err != nil {
 		s.logger.Error("activation email failed", "userID", userID, "error", err)
 	}
+}
+
+func (s *service) AuthenticateUser(
+	ctx context.Context,
+	email string,
+	password string,
+) (*users.User, error) {
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if errors.Is(err, errs.ErrNotFound) {
+		return nil, errs.ErrInvalidCredentials
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	match, err := user.Password.Match(password)
+	if err != nil {
+		return nil, err
+	}
+
+	if !match {
+		return nil, errs.ErrInvalidCredentials
+	}
+
+	return user, nil
 }
