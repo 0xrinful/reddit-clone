@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -25,19 +26,18 @@ type Config struct {
 		Password string
 		Sender   string
 	}
-	JWTSecret string
+	JWT struct {
+		Secret          string
+		RefreshTokenTTL time.Duration
+		AccessTokenTTL  time.Duration
+	}
 }
 
 func Load() Config {
 	var cfg Config
 
 	flag.IntVar(&cfg.Port, "port", 8000, "server port")
-	flag.StringVar(
-		&cfg.DB.DSN,
-		"db-dsn",
-		"postgres://reddit:1234@localhost/reddit?sslmode=disable",
-		"PostgreSQL DSN",
-	)
+	flag.StringVar(&cfg.DB.DSN, "db-dsn", os.Getenv("JWT_SECRET"), "PostgreSQL DSN")
 	flag.IntVar(&cfg.DB.MaxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.DB.MaxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(
@@ -59,7 +59,9 @@ func Load() Config {
 		"SMTP sender",
 	)
 
-	flag.StringVar(&cfg.JWTSecret, "jwt-secret", os.Getenv("JWT_SECRET"), "JWT Secret")
+	flag.StringVar(&cfg.JWT.Secret, "jwt-secret", os.Getenv("JWT_SECRET"), "JWT Secret")
+	cfg.JWT.RefreshTokenTTL = 30 * 24 * time.Hour
+	cfg.JWT.AccessTokenTTL = 30 * time.Minute
 
 	flag.Parse()
 	return cfg

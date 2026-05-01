@@ -47,9 +47,9 @@ func main() {
 	usersSvc := users.NewService(usersRepo)
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)
 	tokensSvc := tokens.NewService(
-		tokensRepo, []byte(cfg.JWTSecret),
-		30*24*time.Hour,
-		30*time.Minute,
+		tokensRepo, []byte(cfg.JWT.Secret),
+		cfg.JWT.RefreshTokenTTL,
+		cfg.JWT.AccessTokenTTL,
 		db,
 	)
 
