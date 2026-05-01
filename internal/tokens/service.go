@@ -43,7 +43,7 @@ type service struct {
 }
 
 type AccessTokenClaims struct {
-	UserID int64 `json:"sub"`
+	UserID int64 `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
@@ -78,8 +78,7 @@ func (s *service) VerifyAccessToken(tokenStr string) (*AccessTokenClaims, error)
 			errors.Is(err, jwt.ErrTokenNotValidYet),
 			errors.Is(err, jwt.ErrTokenMalformed),
 			errors.Is(err, jwt.ErrSignatureInvalid),
-			errors.Is(err, jwt.ErrTokenUnverifiable),
-			errors.Is(err, errs.ErrInvalidToken):
+			errors.Is(err, jwt.ErrTokenUnverifiable):
 			return nil, errs.ErrInvalidToken
 		default:
 			return nil, err

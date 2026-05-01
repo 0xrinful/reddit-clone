@@ -27,3 +27,17 @@ func GetCommunity(r *http.Request) *CommunityCtx {
 	}
 	return community
 }
+
+type UserCtx struct {
+	ID int64
+}
+
+func WithUser(r *http.Request, u *UserCtx) *http.Request {
+	ctx := context.WithValue(r.Context(), userKey{}, u)
+	return r.WithContext(ctx)
+}
+
+func GetUser(r *http.Request) (*UserCtx, bool) {
+	u, ok := r.Context().Value(userKey{}).(*UserCtx)
+	return u, ok
+}

@@ -41,7 +41,7 @@ func New(
 	usersHandler := users.NewHandler(usersSvc, responder)
 	authHandler := auth.NewHandler(authSvc, tokensSvc, responder)
 	router := setupRoutes(
-		responder, middleware, communitiesSvc,
+		responder, middleware, communitiesSvc, tokensSvc,
 		postsHandler, usersHandler, authHandler,
 	)
 

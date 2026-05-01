@@ -81,5 +81,10 @@ func (r *Responder) InvalidCredentials(w http.ResponseWriter) {
 }
 
 func (r *Responder) InvalidToken(w http.ResponseWriter) {
-	r.Error(w, http.StatusUnauthorized, "invalid or expired token")
+	w.Header().Set("WWW-Authenticate", "Bearer")
+	r.Error(w, http.StatusUnauthorized, "invalid or missing token")
+}
+
+func (r *Responder) Unauthorized(w http.ResponseWriter) {
+	r.Error(w, http.StatusUnauthorized, "authentication required")
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/middleware"
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
+	"github.com/0xrinful/reddit-clone/internal/tokens"
 	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
@@ -17,12 +18,14 @@ func setupRoutes(
 	responder *response.Responder,
 	middleware *middleware.Middleware,
 	communitySvc communities.Service,
+	tokensSvc tokens.Service,
 	postsHanlder *posts.Handler,
 	usersHanlder *users.Handler,
 	authHanlder *auth.Handler,
 ) http.Handler {
 	r := rush.New()
 	r.Use(middleware.Recover)
+	r.Use(middleware.Authenticate(tokensSvc))
 
 	r.NotFound = http.HandlerFunc(responder.NotFound)
 	r.MethodNotAllowed = http.HandlerFunc(responder.MethodNotAllowed)
@@ -39,6 +42,7 @@ func setupRoutes(
 
 			r.Group(func(r *rush.Router) {
 				r.Use(middleware.WriteLimit())
+				r.Use(middleware.RequireAuth)
 				r.Post("/posts", postsHanlder.Create)
 				r.Delete("/posts/{id}", postsHanlder.Delete)
 				r.Patch("/posts/{id}", postsHanlder.Update)
