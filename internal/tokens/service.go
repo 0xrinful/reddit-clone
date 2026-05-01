@@ -17,6 +17,7 @@ type Service interface {
 	VerifyAccessToken(tokenStr string) (*AccessTokenClaims, error)
 	VerifyRefreshToken(ctx context.Context, plain string) (*Token, error)
 	RotateRefreshToken(ctx context.Context, plain string, userID int64) (string, error)
+	RevokeRefreshToken(ctx context.Context, plain string) error
 }
 
 func NewService(
@@ -156,4 +157,9 @@ func (s *service) RotateRefreshToken(
 	}
 
 	return newToken.Plaintext, nil
+}
+
+func (s *service) RevokeRefreshToken(ctx context.Context, plain string) error {
+	hash := Hash(plain)
+	return s.tokenRepo.DeleteByHash(ctx, hash)
 }

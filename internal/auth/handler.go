@@ -204,3 +204,27 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	h.responder.JSON(w, http.StatusOK, toRefreshResponse(accessToken, refreshToken))
 }
+
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	var input LogoutRequest
+
+	err := request.DecodeJSON(w, r, &input)
+	if err != nil {
+		h.responder.DecodeError(w, err)
+		return
+	}
+
+	v := validator.New()
+	if input.Validate(v); !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	err = h.tokensService.RevokeRefreshToken(r.Context(), input.Token)
+	if err != nil {
+		h.responder.ServerError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

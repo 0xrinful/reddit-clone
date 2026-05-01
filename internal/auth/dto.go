@@ -49,7 +49,15 @@ type RefreshRequest struct {
 }
 
 func (r *RefreshRequest) Validate(v *validator.Validator) {
-	v.Check(r.Token != "", "token", "must be provided")
+	v.Check(r.Token != "", "refresh_token", "must be provided")
+}
+
+type LogoutRequest struct {
+	Token string `json:"refresh_token"`
+}
+
+func (r *LogoutRequest) Validate(v *validator.Validator) {
+	v.Check(r.Token != "", "refresh_token", "must be provided")
 }
 
 // response envelope

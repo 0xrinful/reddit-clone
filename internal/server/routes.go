@@ -54,6 +54,7 @@ func setupRoutes(
 			r.Post("/auth/register", authHanlder.RegisterUser)
 			r.Post("/auth/login", authHanlder.Login)
 			r.Post("/auth/refresh", authHanlder.Refresh)
+			r.Post("/auth/logout", authHanlder.Logout)
 
 			r.Post("/auth/email/verify", authHanlder.ActivateUser)
 			r.Post("/auth/email/verify/resend", authHanlder.SendActivationEmail)
