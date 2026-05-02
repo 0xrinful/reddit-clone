@@ -48,9 +48,20 @@ func (m *Middleware) Authenticate(svc tokens.Service) func(http.Handler) http.Ha
 
 func (m *Middleware) RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, ok := request.GetUser(r)
-		if !ok {
+		_, authenticated := request.GetUser(r)
+		if !authenticated {
 			m.responder.Unauthorized(w)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (m *Middleware) RequireUnauth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, authenticated := request.GetUser(r)
+		if authenticated {
+			m.responder.Forbidden(w)
 			return
 		}
 		next.ServeHTTP(w, r)

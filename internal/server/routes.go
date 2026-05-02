@@ -21,7 +21,7 @@ func setupRoutes(
 	tokensSvc tokens.Service,
 	postsHanlder *posts.Handler,
 	usersHanlder *users.Handler,
-	authHanlder *auth.Handler,
+	authHandler *auth.Handler,
 ) http.Handler {
 	r := rush.New()
 	r.Use(middleware.Recover)
@@ -41,23 +41,28 @@ func setupRoutes(
 			})
 
 			r.Group(func(r *rush.Router) {
-				r.Use(middleware.WriteLimit())
 				r.Use(middleware.RequireAuth)
+				r.Use(middleware.WriteLimit())
 				r.Post("/posts", postsHanlder.Create)
 				r.Delete("/posts/{id}", postsHanlder.Delete)
 				r.Patch("/posts/{id}", postsHanlder.Update)
 			})
 		})
 
-		r.Group(func(r *rush.Router) {
-			r.Use(middleware.StrictLimit())
-			r.Post("/auth/register", authHanlder.RegisterUser)
-			r.Post("/auth/login", authHanlder.Login)
-			r.Post("/auth/refresh", authHanlder.Refresh)
-			r.Post("/auth/logout", authHanlder.Logout)
+		r.Route("/auth", func(r *rush.Router) {
+			r.Group(func(r *rush.Router) {
+				r.Use(middleware.RequireUnauth)
+				r.With(middleware.AuthLimit()).Post("/login", authHandler.Login)
+				r.With(middleware.RegisterLimit()).Post("/register", authHandler.RegisterUser)
+			})
 
-			r.Post("/auth/email/verify", authHanlder.ActivateUser)
-			r.Post("/auth/email/verify/resend", authHanlder.SendActivationEmail)
+			r.Group(func(r *rush.Router) {
+				r.Use(middleware.AuthLimit())
+				r.Post("/refresh", authHandler.Refresh)
+				r.Post("/logout", authHandler.Logout)
+				r.Post("/email/verify", authHandler.ActivateUser)
+				r.Post("/email/verify/resend", authHandler.SendActivationEmail)
+			})
 		})
 	})
 

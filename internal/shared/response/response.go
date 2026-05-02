@@ -88,3 +88,7 @@ func (r *Responder) InvalidToken(w http.ResponseWriter) {
 func (r *Responder) Unauthorized(w http.ResponseWriter) {
 	r.Error(w, http.StatusUnauthorized, "authentication required")
 }
+
+func (r *Responder) Forbidden(w http.ResponseWriter) {
+	r.Error(w, http.StatusForbidden, "forbidden")
+}
