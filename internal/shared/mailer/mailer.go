@@ -19,12 +19,12 @@ type Mailer struct {
 	sender string
 }
 
-func New(cfg config.Config) *Mailer {
-	dialer := mail.NewDialer(cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password)
+func New(cfg config.SMTPConfig) *Mailer {
+	dialer := mail.NewDialer(cfg.Host, cfg.Port, cfg.Username, cfg.Password)
 	dialer.Timeout = 5 * time.Second
 	return &Mailer{
 		dialer: *dialer,
-		sender: cfg.SMTP.Sender,
+		sender: cfg.Sender,
 	}
 }
 

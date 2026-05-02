@@ -25,10 +25,10 @@ import (
 func main() {
 	cfg := config.Load()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	mailer := mailer.New(cfg)
+	mailer := mailer.New(cfg.SMTP)
 	bg := background.New(logger)
 
-	db, err := database.Open(cfg)
+	db, err := database.Open(cfg.DB)
 	if err != nil {
 		logger.Error("db connection failed", "err", err)
 		os.Exit(1)
@@ -46,12 +46,7 @@ func main() {
 	postsSvc := posts.NewService(postsRepo)
 	usersSvc := users.NewService(usersRepo)
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)
-	tokensSvc := tokens.NewService(
-		tokensRepo, []byte(cfg.JWT.Secret),
-		cfg.JWT.RefreshTokenTTL,
-		cfg.JWT.AccessTokenTTL,
-		db,
-	)
+	tokensSvc := tokens.NewService(tokensRepo, db, cfg.JWT)
 
 	srv := server.New(cfg, logger, bg, communitiesSvc, postsSvc, usersSvc, authSvc, tokensSvc)
 

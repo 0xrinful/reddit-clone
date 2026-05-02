@@ -16,16 +16,16 @@ type DB interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
-func Open(cfg config.Config) (*sql.DB, error) {
-	db, err := sql.Open("postgres", cfg.DB.DSN)
+func Open(cfg config.DBConfig) (*sql.DB, error) {
+	db, err := sql.Open("postgres", cfg.DSN)
 	if err != nil {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(cfg.DB.MaxOpenConns)
-	db.SetMaxIdleConns(cfg.DB.MaxIdleConns)
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
 
-	duration, err := time.ParseDuration(cfg.DB.MaxIdleTime)
+	duration, err := time.ParseDuration(cfg.MaxIdleTime)
 	if err != nil {
 		return nil, err
 	}

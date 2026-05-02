@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/0xrinful/reddit-clone/internal/config"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
@@ -20,18 +21,13 @@ type Service interface {
 	RevokeRefreshToken(ctx context.Context, plain string) error
 }
 
-func NewService(
-	tokenRepo Repository,
-	jwtSecret []byte,
-	refreshTLL, accessTTL time.Duration,
-	db *sql.DB,
-) Service {
+func NewService(tokenRepo Repository, db *sql.DB, cfg config.JWTConfig) Service {
 	return &service{
 		db:         db,
 		tokenRepo:  tokenRepo,
-		secret:     jwtSecret,
-		refreshTTL: refreshTLL,
-		accessTTL:  accessTTL,
+		secret:     []byte(cfg.Secret),
+		refreshTTL: cfg.RefreshTokenTTL,
+		accessTTL:  cfg.AccessTokenTTL,
 	}
 }
 

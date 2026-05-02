@@ -7,30 +7,36 @@ import (
 )
 
 type Config struct {
-	Port int
-	DB   struct {
-		DSN          string
-		MaxOpenConns int
-		MaxIdleConns int
-		MaxIdleTime  string
-	}
+	Port    int
+	DB      DBConfig
+	Limiter LimiterConfig
+	SMTP    SMTPConfig
+	JWT     JWTConfig
+}
 
-	Limiter struct {
-		Enabled bool
-	}
+type DBConfig struct {
+	DSN          string
+	MaxOpenConns int
+	MaxIdleConns int
+	MaxIdleTime  string
+}
 
-	SMTP struct {
-		Host     string
-		Port     int
-		Username string
-		Password string
-		Sender   string
-	}
-	JWT struct {
-		Secret          string
-		RefreshTokenTTL time.Duration
-		AccessTokenTTL  time.Duration
-	}
+type JWTConfig struct {
+	Secret          string
+	RefreshTokenTTL time.Duration
+	AccessTokenTTL  time.Duration
+}
+
+type SMTPConfig struct {
+	Host     string
+	Port     int
+	Username string
+	Password string
+	Sender   string
+}
+
+type LimiterConfig struct {
+	Enabled bool
 }
 
 func Load() Config {
