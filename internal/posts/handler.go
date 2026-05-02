@@ -28,7 +28,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := int64(1) //  TODO: for now
+	user, authenticated := request.GetUser(r)
 	community := request.GetCommunity(r)
 
 	post, err := h.service.GetPost(r.Context(), id, community.ID)
@@ -42,7 +42,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if userID == post.UserID {
+	if authenticated && user.ID == post.UserID {
 		h.responder.JSON(w, http.StatusOK, toPostOwnerResponse(post, community.Name))
 	} else {
 		h.responder.JSON(w, http.StatusOK, toPostResponse(post, community.Name))
@@ -50,7 +50,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	userID := int64(1) //  TODO: for now
+	user, _ := request.GetUser(r)
 	community := request.GetCommunity(r)
 
 	var input CreatePostRequest
@@ -68,7 +68,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := CreatePostParams{
-		UserID:      userID,
+		UserID:      user.ID,
 		CommunityID: community.ID,
 		Title:       input.Title,
 		Body:        input.Body,
@@ -106,11 +106,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := int64(1) //  TODO: for now
+	user, _ := request.GetUser(r)
 	community := request.GetCommunity(r)
 	params := UpdatePostParams{
 		ID:          id,
-		UserID:      userID,
+		UserID:      user.ID,
 		CommunityID: community.ID,
 		Title:       input.Title,
 		Body:        input.Body,
@@ -137,10 +137,10 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := int64(1) //  TODO: for now
+	user, _ := request.GetUser(r)
 	community := request.GetCommunity(r)
 
-	err = h.service.DeletePost(r.Context(), id, userID, community.ID)
+	err = h.service.DeletePost(r.Context(), id, user.ID, community.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
