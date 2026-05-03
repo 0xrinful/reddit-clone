@@ -36,14 +36,24 @@ func (r *UpdatePostRequest) Validate(v *validator.Validator) {
 }
 
 // DTOs
+type AuthorDTO struct {
+	ID       int64  `json:"id,omitempty"`
+	Username string `json:"username,omitempty"`
+}
+
+type CommunityDTO struct {
+	ID   int64  `json:"id,omitempty"`
+	Name string `json:"name,omitempty"`
+}
+
 type PostPublicDTO struct {
-	ID            int64     `json:"id"`
-	Title         string    `json:"title"`
-	Body          string    `json:"body"`
-	Score         int64     `json:"score"`
-	UserID        int64     `json:"user_id"`
-	CommunityName string    `json:"community"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID        int64        `json:"id"`
+	Title     string       `json:"title"`
+	Body      string       `json:"body"`
+	Score     int64        `json:"score"`
+	Author    AuthorDTO    `json:"author"`
+	Community CommunityDTO `json:"community"`
+	CreatedAt time.Time    `json:"created_at"`
 }
 
 type PostOwnerDTO struct {
@@ -52,24 +62,77 @@ type PostOwnerDTO struct {
 	Version int32 `json:"version"`
 }
 
+type PostSummaryDTO struct {
+	ID        int64        `json:"id"`
+	Title     string       `json:"title"`
+	Body      string       `json:"body"`
+	Score     int64        `json:"score"`
+	CreatedAt time.Time    `json:"created_at"`
+	Author    AuthorDTO    `json:"author"`
+	Community CommunityDTO `json:"community"`
+}
+
 // mapping helpers
-func toPostPublicDTO(p *Post, communityName string) PostPublicDTO {
+func toPostPublicDTO(p *PostDetails) PostPublicDTO {
 	return PostPublicDTO{
-		ID:            p.ID,
-		Title:         p.Title,
-		Body:          p.Body,
-		UserID:        p.UserID,
-		Score:         p.Score,
-		CommunityName: communityName,
-		CreatedAt:     p.CreatedAt,
+		ID:    p.ID,
+		Title: p.Title,
+		Body:  p.Body,
+		Score: p.Score,
+		Author: AuthorDTO{
+			ID:       p.UserID,
+			Username: p.Author.Username,
+		},
+		Community: CommunityDTO{
+			ID:   p.CommunityID,
+			Name: p.Community.Name,
+		},
+		CreatedAt: p.CreatedAt,
 	}
 }
 
-func toPostOwnerDTO(p *Post, communityName string) PostOwnerDTO {
+func toPostOwnerDTO(p *PostDetails) PostOwnerDTO {
 	return PostOwnerDTO{
-		PostPublicDTO: toPostPublicDTO(p, communityName),
+		PostPublicDTO: toPostPublicDTO(p),
 		Views:         p.Views,
 		Version:       p.Version,
+	}
+}
+
+func postToPostOwnerDTO(p *Post, communityName string) PostOwnerDTO {
+	return PostOwnerDTO{
+		PostPublicDTO: PostPublicDTO{
+			ID:    p.ID,
+			Title: p.Title,
+			Body:  p.Body,
+			Score: p.Score,
+			Author: AuthorDTO{
+				ID: p.UserID,
+			},
+			Community: CommunityDTO{
+				ID:   p.CommunityID,
+				Name: communityName,
+			},
+			CreatedAt: p.CreatedAt,
+		},
+		Views:   p.Views,
+		Version: p.Version,
+	}
+}
+
+func toPostSummaryDTO(p *PostSummary) PostSummaryDTO {
+	return PostSummaryDTO{
+		ID:    p.ID,
+		Title: p.Title,
+		Body:  p.Body,
+		Score: p.Score,
+		Author: AuthorDTO{
+			Username: p.AuthorName,
+		},
+		Community: CommunityDTO{
+			Name: p.CommunityName,
+		},
+		CreatedAt: p.CreatedAt,
 	}
 }
 
@@ -83,27 +146,27 @@ type PostOwnerResponse struct {
 }
 
 type ListPostsResponse struct {
-	Posts      []PostPublicDTO `json:"posts"`
-	NextCursor string          `json:"next_cursor,omitempty"`
+	Posts      []PostSummaryDTO `json:"posts"`
+	NextCursor string           `json:"next_cursor,omitempty"`
 }
 
 // response constructor
-func toPostResponse(p *Post, communityName string) PostResponse {
+func toPostResponse(p *PostDetails) PostResponse {
 	return PostResponse{
-		Post: toPostPublicDTO(p, communityName),
+		Post: toPostPublicDTO(p),
 	}
 }
 
-func toPostOwnerResponse(p *Post, communityName string) PostOwnerResponse {
+func toPostOwnerResponse(p *PostDetails) PostOwnerResponse {
 	return PostOwnerResponse{
-		Post: toPostOwnerDTO(p, communityName),
+		Post: toPostOwnerDTO(p),
 	}
 }
 
-func toListPostsResponse(p []*Post, nextCursor string, communityName string) ListPostsResponse {
-	posts := make([]PostPublicDTO, len(p))
+func toListPostsResponse(p []*PostSummary, nextCursor string) ListPostsResponse {
+	posts := make([]PostSummaryDTO, len(p))
 	for i := range p {
-		posts[i] = toPostPublicDTO(p[i], communityName)
+		posts[i] = toPostSummaryDTO(p[i])
 	}
 	return ListPostsResponse{Posts: posts, NextCursor: nextCursor}
 }

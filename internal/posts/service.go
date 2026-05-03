@@ -5,11 +5,11 @@ import (
 )
 
 type Service interface {
-	GetPost(ctx context.Context, id, communityID int64) (*Post, error)
+	GetPost(ctx context.Context, id int64) (*PostDetails, error)
 	CreatePost(ctx context.Context, params CreatePostParams) (*Post, error)
 	UpdatePost(ctx context.Context, params UpdatePostParams) error
-	DeletePost(ctx context.Context, id, userID, communityID int64) error
-	List(ctx context.Context, params ListPostParams) ([]*Post, error)
+	DeletePost(ctx context.Context, id, userID int64) error
+	List(ctx context.Context, params ListPostParams) ([]*PostSummary, error)
 }
 
 type service struct {
@@ -42,14 +42,14 @@ func (s *service) UpdatePost(ctx context.Context, params UpdatePostParams) error
 	return s.repo.Update(ctx, params)
 }
 
-func (s *service) GetPost(ctx context.Context, id, communityID int64) (*Post, error) {
-	return s.repo.Get(ctx, id, communityID)
+func (s *service) GetPost(ctx context.Context, id int64) (*PostDetails, error) {
+	return s.repo.Get(ctx, id)
 }
 
-func (s *service) DeletePost(ctx context.Context, id, userID, communityID int64) error {
-	return s.repo.Delete(ctx, id, userID, communityID)
+func (s *service) DeletePost(ctx context.Context, id, userID int64) error {
+	return s.repo.Delete(ctx, id, userID)
 }
 
-func (s *service) List(ctx context.Context, params ListPostParams) ([]*Post, error) {
+func (s *service) List(ctx context.Context, params ListPostParams) ([]*PostSummary, error) {
 	return s.repo.List(ctx, params)
 }

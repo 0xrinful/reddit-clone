@@ -18,6 +18,26 @@ type Post struct {
 	Version     int32
 }
 
+type PostDetails struct {
+	Post
+	Author struct {
+		Username string
+	}
+	Community struct {
+		Name string
+	}
+}
+
+type PostSummary struct {
+	ID            int64
+	Title         string
+	Body          string
+	Score         int64
+	CreatedAt     time.Time
+	AuthorName    string
+	CommunityName string
+}
+
 type CreatePostParams struct {
 	UserID      int64
 	CommunityID int64
@@ -26,11 +46,10 @@ type CreatePostParams struct {
 }
 
 type UpdatePostParams struct {
-	ID          int64
-	UserID      int64
-	CommunityID int64
-	Title       *string
-	Body        *string
+	ID     int64
+	UserID int64
+	Title  *string
+	Body   *string
 }
 
 type SortBy string

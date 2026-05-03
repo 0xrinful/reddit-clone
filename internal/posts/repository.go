@@ -12,11 +12,11 @@ import (
 )
 
 type Repository interface {
-	Get(ctx context.Context, id, communityID int64) (*Post, error)
+	Get(ctx context.Context, id int64) (*PostDetails, error)
 	Create(ctx context.Context, p *Post) error
 	Update(ctx context.Context, p UpdatePostParams) error
-	Delete(ctx context.Context, id, userID, communityID int64) error
-	List(ctx context.Context, params ListPostParams) ([]*Post, error)
+	Delete(ctx context.Context, id, userID int64) error
+	List(ctx context.Context, params ListPostParams) ([]*PostSummary, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -27,20 +27,26 @@ type postgresRepository struct {
 	db database.DB
 }
 
-func (r *postgresRepository) Get(ctx context.Context, id, CommunityID int64) (*Post, error) {
+func (r *postgresRepository) Get(ctx context.Context, id int64) (*PostDetails, error) {
 	query := `
-		SELECT id, title, body, user_id, community_id, views, created_at, version
-		FROM posts
-		WHERE id = $1 AND community_id = $2`
+		SELECT 
+			p.id, p.title, p.body, p.created_at, p.views, p.version,
+			p.user_id, u.username as author,
+			p.community_id, c.name 
+		FROM posts p 
+		JOIN communities c ON p.community_id = c.id
+		JOIN users u ON p.user_id = u.id
+		WHERE p.id = $1`
 
-	var p Post
+	var p PostDetails
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, id, CommunityID).Scan(
-		&p.ID, &p.Title, &p.Body, &p.UserID, &p.CommunityID,
-		&p.Views, &p.CreatedAt, &p.Version,
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Views, &p.Version,
+		&p.UserID, &p.Author.Username,
+		&p.CommunityID, &p.Community.Name,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -89,7 +95,7 @@ func (r *postgresRepository) Update(ctx context.Context, p UpdatePostParams) err
 
 	q.Set("version = version + 1")
 
-	q.Where("id = ? AND community_id = ? AND user_id = ?", p.ID, p.CommunityID, p.UserID)
+	q.Where("id = ? AND user_id = ?", p.ID, p.UserID)
 	query, args := q.ToSql()
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
@@ -112,15 +118,15 @@ func (r *postgresRepository) Update(ctx context.Context, p UpdatePostParams) err
 	return nil
 }
 
-func (r *postgresRepository) Delete(ctx context.Context, id, userID, communityID int64) error {
+func (r *postgresRepository) Delete(ctx context.Context, id, userID int64) error {
 	query := `
 		DELETE FROM posts 
-		WHERE id = $1 AND user_id = $2 AND community_id = $3`
+		WHERE id = $1 AND user_id = $2`
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	result, err := r.db.ExecContext(ctx, query, id, userID, communityID)
+	result, err := r.db.ExecContext(ctx, query, id, userID)
 	if err != nil {
 		return err
 	}
@@ -137,33 +143,31 @@ func (r *postgresRepository) Delete(ctx context.Context, id, userID, communityID
 	return nil
 }
 
-func (r *postgresRepository) List(ctx context.Context, params ListPostParams) ([]*Post, error) {
+// TODO: denormalize score and put it as field in the db table
+func (r *postgresRepository) List(
+	ctx context.Context,
+	params ListPostParams,
+) ([]*PostSummary, error) {
 	query := query.New()
 	cursor := params.Pagination.Cursor
 
-	query.Prefix(`
-		WITH scored_posts AS (
-			SELECT p.id, p.title, p.body, p.user_id, p.community_id,
-				p.views, p.created_at, p.version,
-				COALESCE(SUM(v.value), 0) AS score
-			FROM posts p
-			LEFT JOIN post_votes v ON p.id = v.post_id
-			WHERE p.community_id = ?
-			GROUP BY p.id
-		)`, params.CommunityID)
-	query.Select("*", "scored_posts")
+	query.Select("p.id, p.title, p.body, p.score, p.created_at, u.username, c.name", "posts p")
+	query.Join("communities c ON p.community_id = c.id")
+	query.Join("users u ON p.user_id = u.id")
+
+	query.Where("p.community_id = ?", params.CommunityID)
 
 	switch params.Sort {
 	case SortByNew:
 		if cursor != nil {
-			query.Where("(created_at, id) < (?, ?)", cursor.CreatedAt, cursor.ID)
+			query.Where("(p.created_at, p.id) < (?, ?)", cursor.CreatedAt, cursor.ID)
 		}
-		query.Order("created_at DESC, id DESC ")
+		query.Order("p.created_at DESC, p.id DESC ")
 	case SortByTop, SortByHot:
 		if cursor != nil {
-			query.Where("(score, id) < (?, ?)", cursor.Score, cursor.ID)
+			query.Where("(p.score, p.id) < (?, ?)", cursor.Score, cursor.ID)
 		}
-		query.Order("score DESC, id DESC ")
+		query.Order("p.score DESC, p.id DESC ")
 	default:
 		panic("invalid sort value")
 	}
@@ -180,12 +184,12 @@ func (r *postgresRepository) List(ctx context.Context, params ListPostParams) ([
 	}
 	defer rows.Close()
 
-	posts := make([]*Post, 0, params.Pagination.Limit)
+	posts := make([]*PostSummary, 0, params.Pagination.Limit)
 	for rows.Next() {
-		var p Post
+		var p PostSummary
 		err = rows.Scan(
-			&p.ID, &p.Title, &p.Body, &p.UserID, &p.CommunityID,
-			&p.Views, &p.CreatedAt, &p.Version, &p.Score,
+			&p.ID, &p.Title, &p.Body, &p.Score, &p.CreatedAt,
+			&p.AuthorName, &p.CommunityName,
 		)
 		if err != nil {
 			return nil, err

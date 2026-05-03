@@ -29,9 +29,8 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, authenticated := request.GetUser(r)
-	community := request.GetCommunity(r)
 
-	post, err := h.service.GetPost(r.Context(), id, community.ID)
+	post, err := h.service.GetPost(r.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
@@ -43,9 +42,9 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if authenticated && user.ID == post.UserID {
-		h.responder.JSON(w, http.StatusOK, toPostOwnerResponse(post, community.Name))
+		h.responder.JSON(w, http.StatusOK, toPostOwnerResponse(post))
 	} else {
-		h.responder.JSON(w, http.StatusOK, toPostResponse(post, community.Name))
+		h.responder.JSON(w, http.StatusOK, toPostResponse(post))
 	}
 }
 
@@ -82,7 +81,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/api/v1/r/%s/posts/%d", community.Name, post.ID))
 
-	h.responder.JSON(w, http.StatusCreated, toPostOwnerResponse(post, community.Name), headers)
+	h.responder.JSON(w, http.StatusCreated, postToPostOwnerDTO(post, community.Name), headers)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -107,13 +106,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, _ := request.GetUser(r)
-	community := request.GetCommunity(r)
 	params := UpdatePostParams{
-		ID:          id,
-		UserID:      user.ID,
-		CommunityID: community.ID,
-		Title:       input.Title,
-		Body:        input.Body,
+		ID:     id,
+		UserID: user.ID,
+		Title:  input.Title,
+		Body:   input.Body,
 	}
 
 	err = h.service.UpdatePost(r.Context(), params)
@@ -138,9 +135,8 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, _ := request.GetUser(r)
-	community := request.GetCommunity(r)
 
-	err = h.service.DeletePost(r.Context(), id, user.ID, community.ID)
+	err = h.service.DeletePost(r.Context(), id, user.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
@@ -201,5 +197,5 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		posts = page
 	}
 
-	h.responder.JSON(w, http.StatusOK, toListPostsResponse(posts, nextCursor, community.Name))
+	h.responder.JSON(w, http.StatusOK, toListPostsResponse(posts, nextCursor))
 }
