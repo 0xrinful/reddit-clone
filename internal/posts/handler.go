@@ -30,7 +30,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	user, authenticated := request.GetUser(r)
 
-	post, err := h.service.GetPost(r.Context(), id)
+	post, err := h.service.GetDetails(r.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
@@ -72,7 +72,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		Title:       input.Title,
 		Body:        input.Body,
 	}
-	post, err := h.service.CreatePost(r.Context(), params)
+	post, err := h.service.Create(r.Context(), params)
 	if err != nil {
 		h.responder.ServerError(w, err)
 		return
@@ -113,7 +113,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		Body:   input.Body,
 	}
 
-	err = h.service.UpdatePost(r.Context(), params)
+	err = h.service.Update(r.Context(), params)
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
@@ -136,7 +136,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	user, _ := request.GetUser(r)
 
-	err = h.service.DeletePost(r.Context(), id, user.ID)
+	err = h.service.Delete(r.Context(), id, user.ID)
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
@@ -173,7 +173,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		Sort:        sort,
 	}
 
-	posts, err := h.service.List(r.Context(), params)
+	posts, err := h.service.ListSummaries(r.Context(), params)
 	if err != nil {
 		h.responder.ServerError(w, err)
 		return

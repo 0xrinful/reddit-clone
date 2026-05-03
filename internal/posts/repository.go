@@ -12,11 +12,12 @@ import (
 )
 
 type Repository interface {
-	Get(ctx context.Context, id int64) (*PostDetails, error)
+	GetByID(ctx context.Context, id int64) (*Post, error)
+	GetDetails(ctx context.Context, id int64) (*PostDetails, error)
 	Create(ctx context.Context, p *Post) error
 	Update(ctx context.Context, p UpdatePostParams) error
 	Delete(ctx context.Context, id, userID int64) error
-	List(ctx context.Context, params ListPostParams) ([]*PostSummary, error)
+	ListSummaries(ctx context.Context, params ListPostParams) ([]*PostSummary, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -27,10 +28,40 @@ type postgresRepository struct {
 	db database.DB
 }
 
-func (r *postgresRepository) Get(ctx context.Context, id int64) (*PostDetails, error) {
+func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, error) {
 	query := `
 		SELECT 
-			p.id, p.title, p.body, p.created_at, p.views, p.version,
+			p.id, p.title, p.body, p.created_at, p.score, p.views, p.version,
+			p.user_id, p.community_id  
+		FROM posts p 
+		WHERE p.id = $1`
+
+	var p Post
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Score, &p.Views, &p.Version,
+		&p.UserID, &p.CommunityID,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errs.ErrNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	p.CreatedAt = p.CreatedAt.UTC()
+
+	return &p, nil
+}
+
+func (r *postgresRepository) GetDetails(ctx context.Context, id int64) (*PostDetails, error) {
+	query := `
+		SELECT 
+			p.id, p.title, p.body, p.created_at, p.score, p.views, p.version,
 			p.user_id, u.username as author,
 			p.community_id, c.name 
 		FROM posts p 
@@ -44,7 +75,7 @@ func (r *postgresRepository) Get(ctx context.Context, id int64) (*PostDetails, e
 	defer cancel()
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Views, &p.Version,
+		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Score, &p.Views, &p.Version,
 		&p.UserID, &p.Author.Username,
 		&p.CommunityID, &p.Community.Name,
 	)
@@ -143,8 +174,7 @@ func (r *postgresRepository) Delete(ctx context.Context, id, userID int64) error
 	return nil
 }
 
-// TODO: denormalize score and put it as field in the db table
-func (r *postgresRepository) List(
+func (r *postgresRepository) ListSummaries(
 	ctx context.Context,
 	params ListPostParams,
 ) ([]*PostSummary, error) {
