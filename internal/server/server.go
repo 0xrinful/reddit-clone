@@ -10,7 +10,6 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/auth"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
-	"github.com/0xrinful/reddit-clone/internal/middleware"
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/shared/background"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
@@ -19,15 +18,25 @@ import (
 )
 
 type Server struct {
-	httpServer *http.Server
+	cfg        config.Config
 	logger     *slog.Logger
-	background *background.Worker
+	httpServer *http.Server
+	bg         *background.Worker
+
+	// services (for middleware)
+	communitiesSvc communities.Service
+	tokensSvc      tokens.Service
+
+	// handlers (for routes)
+	posts *posts.Handler
+	users *users.Handler
+	auth  *auth.Handler
 }
 
 func New(
 	cfg config.Config,
 	logger *slog.Logger,
-	background *background.Worker,
+	bg *background.Worker,
 	communitiesSvc communities.Service,
 	postsSvc posts.Service,
 	usersSvc users.Service,
@@ -35,31 +44,39 @@ func New(
 	tokensSvc tokens.Service,
 ) *Server {
 	responder := response.NewResponder(logger)
-	middleware := middleware.New(responder, cfg)
 
 	postsHandler := posts.NewHandler(postsSvc, responder)
 	usersHandler := users.NewHandler(usersSvc, responder)
 	authHandler := auth.NewHandler(authSvc, tokensSvc, responder)
-	router := setupRoutes(
-		responder, middleware, communitiesSvc, tokensSvc,
-		postsHandler, usersHandler, authHandler,
-	)
+
+	server := &Server{
+		cfg:    cfg,
+		logger: logger,
+		bg:     bg,
+
+		communitiesSvc: communitiesSvc,
+		tokensSvc:      tokensSvc,
+
+		posts: postsHandler,
+		users: usersHandler,
+		auth:  authHandler,
+	}
+
+	router := server.setupRoutes(responder)
 
 	// bridge slog → *log.Logger for http.Server
 	errLog := slog.NewLogLogger(logger.Handler(), slog.LevelError)
 
-	return &Server{
-		httpServer: &http.Server{
-			Addr:         fmt.Sprintf(":%d", cfg.Port),
-			Handler:      router,
-			ErrorLog:     errLog,
-			ReadTimeout:  10 * time.Second,
-			WriteTimeout: 30 * time.Second,
-			IdleTimeout:  60 * time.Second,
-		},
-		logger:     logger,
-		background: background,
+	server.httpServer = &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.Port),
+		Handler:      router,
+		ErrorLog:     errLog,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
+
+	return server
 }
 
 func (s *Server) Start() error {
@@ -73,7 +90,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	s.logger.Info("waiting for background tasks to finish...")
-	s.background.Wait()
+	s.bg.Wait()
 	s.logger.Info("all tasks finished, exiting")
 	return nil
 }

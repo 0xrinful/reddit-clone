@@ -92,6 +92,9 @@ func (m *Middleware) RateLimit(
 				c.limiters[name] = entry
 			}
 			allowed := entry.limiter.Allow()
+			if allowed {
+				entry.expiresAt = time.Now().Add(ttl)
+			}
 			c.mu.Unlock()
 
 			if !allowed {
@@ -116,8 +119,12 @@ func (m *Middleware) AuthLimit() func(http.Handler) http.Handler {
 	return m.RateLimit("auth", 10, 15*time.Minute, 15*time.Minute)
 }
 
+func (m *Middleware) StrictLimit() func(http.Handler) http.Handler {
+	return m.RateLimit("strict", 3, time.Hour*1, 1*time.Hour)
+}
+
 func (m *Middleware) RegisterLimit() func(http.Handler) http.Handler {
-	return m.RateLimit("strict", 5, time.Hour*12, 24*time.Hour)
+	return m.RateLimit("register", 5, time.Hour*12, 24*time.Hour)
 }
 
 func key(r *http.Request) string {
