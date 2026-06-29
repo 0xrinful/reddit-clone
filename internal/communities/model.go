@@ -10,3 +10,18 @@ type Community struct {
 	CreatedAt   time.Time
 	Version     int32
 }
+
+type CommunityOwner struct {
+	Username string
+}
+
+type CommunityView struct {
+	Community
+	Owner *CommunityOwner
+}
+
+type CreateCommunityParams struct {
+	Name        string
+	OwnerID     int64
+	Description string
+}
