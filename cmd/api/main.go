@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
+
 	"github.com/0xrinful/reddit-clone/internal/auth"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
@@ -23,8 +25,13 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	if err := godotenv.Load(); err != nil {
+		logger.Warn("no .env file loaded", "err", err)
+	}
+
+	cfg := config.Load()
 	mailer := mailer.New(cfg.SMTP)
 	bg := background.New(logger)
 
