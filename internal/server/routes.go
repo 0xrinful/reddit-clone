@@ -35,7 +35,7 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 
 			r.Route("/email", func(r *rush.Router) {
 				r.Use(m.StrictLimit())
-				r.Post("/email/verify", s.auth.ActivateUser)
+				r.Post("/verify", s.auth.ActivateUser)
 				r.Post("/verify/resend", s.auth.SendActivationEmail)
 			})
 		})

@@ -3,12 +3,13 @@ package errs
 import "errors"
 
 var (
-	ErrEditConflict       = errors.New("edit conflict")
-	ErrNotFound           = errors.New("not found")
-	ErrDuplicateEmail     = errors.New("duplicate email")
-	ErrDuplicateUsername  = errors.New("duplicate username")
-	ErrAlreadyActivated   = errors.New("already activated")
-	ErrInvalidToken       = errors.New("invalid or expired token")
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrRefreshTokenReuse  = errors.New("refresh token reuse")
+	ErrEditConflict           = errors.New("edit conflict")
+	ErrNotFound               = errors.New("not found")
+	ErrDuplicateEmail         = errors.New("duplicate email")
+	ErrDuplicateUsername      = errors.New("duplicate username")
+	ErrDuplicateCommunityName = errors.New("duplicate community name")
+	ErrAlreadyActivated       = errors.New("already activated")
+	ErrInvalidToken           = errors.New("invalid or expired token")
+	ErrInvalidCredentials     = errors.New("invalid credentials")
+	ErrRefreshTokenReuse      = errors.New("refresh token reuse")
 )

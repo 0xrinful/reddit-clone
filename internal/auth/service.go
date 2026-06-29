@@ -168,7 +168,7 @@ func (s *service) SendActivationEmail(ctx context.Context, email string) error {
 func (s *service) deliverActivationEmail(userID int64, email, username, plaintext string) {
 	err := s.mailer.Send(email, "activation.html", map[string]any{
 		"Username":      username,
-		"ActivationURL": "https://app.com/verify?token=" + plaintext,
+		"ActivationURL": "https://app.com/verify?token=" + plaintext, // TODO: update url
 	})
 	if err != nil {
 		s.logger.Error("activation email failed", "userID", userID, "error", err)

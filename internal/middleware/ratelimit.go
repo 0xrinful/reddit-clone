@@ -24,7 +24,7 @@ func newEntry(requests int, per time.Duration, ttl time.Duration) *limiterEntry 
 	}
 }
 
-// TODO: add number of blocked users limit for the ip [block ip which has too much bad users]
+// TODO: add number of blocked users limit for the ip [block ip which has too many bad users]
 type client struct {
 	mu       sync.Mutex
 	limiters map[string]*limiterEntry
@@ -127,6 +127,7 @@ func (m *Middleware) RegisterLimit() func(http.Handler) http.Handler {
 	return m.RateLimit("register", 5, time.Hour*12, 24*time.Hour)
 }
 
+// TODO: support X-Forwarded-For, X-Real-IP, ...
 func key(r *http.Request) string {
 	user, authenticated := request.GetUser(r)
 	if authenticated {

@@ -73,7 +73,7 @@ type PostSummaryDTO struct {
 }
 
 // mapping helpers
-func toPostPublicDTO(p *PostDetails) PostPublicDTO {
+func toPostPublicDTO(p *PostWithRelations) PostPublicDTO {
 	return PostPublicDTO{
 		ID:    p.ID,
 		Title: p.Title,
@@ -91,7 +91,7 @@ func toPostPublicDTO(p *PostDetails) PostPublicDTO {
 	}
 }
 
-func toPostOwnerDTO(p *PostDetails) PostOwnerDTO {
+func toPostOwnerDTO(p *PostWithRelations) PostOwnerDTO {
 	return PostOwnerDTO{
 		PostPublicDTO: toPostPublicDTO(p),
 		Views:         p.Views,
@@ -127,10 +127,10 @@ func toPostSummaryDTO(p *PostSummary) PostSummaryDTO {
 		Body:  p.Body,
 		Score: p.Score,
 		Author: AuthorDTO{
-			Username: p.AuthorName,
+			Username: p.Author.Username,
 		},
 		Community: CommunityDTO{
-			Name: p.CommunityName,
+			Name: p.Community.Name,
 		},
 		CreatedAt: p.CreatedAt,
 	}
@@ -151,13 +151,13 @@ type ListPostsResponse struct {
 }
 
 // response constructor
-func toPostResponse(p *PostDetails) PostResponse {
+func toPostResponse(p *PostWithRelations) PostResponse {
 	return PostResponse{
 		Post: toPostPublicDTO(p),
 	}
 }
 
-func toPostOwnerResponse(p *PostDetails) PostOwnerResponse {
+func toPostOwnerResponse(p *PostWithRelations) PostOwnerResponse {
 	return PostOwnerResponse{
 		Post: toPostOwnerDTO(p),
 	}

@@ -23,7 +23,7 @@ func WithCommunity(r *http.Request, c *CommunityCtx) *http.Request {
 func GetCommunity(r *http.Request) *CommunityCtx {
 	community, ok := r.Context().Value(communityKey{}).(*CommunityCtx)
 	if !ok {
-		panic("missing community_name value in request context")
+		panic("request: missing community_name value in request context")
 	}
 	return community
 }

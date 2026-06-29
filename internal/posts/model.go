@@ -18,7 +18,7 @@ type Post struct {
 	Version     int32
 }
 
-type PostDetails struct {
+type PostWithRelations struct {
 	Post
 	Author struct {
 		Username string
@@ -29,13 +29,17 @@ type PostDetails struct {
 }
 
 type PostSummary struct {
-	ID            int64
-	Title         string
-	Body          string
-	Score         int64
-	CreatedAt     time.Time
-	AuthorName    string
-	CommunityName string
+	ID        int64
+	Title     string
+	Body      string
+	Score     int64
+	CreatedAt time.Time
+	Author    struct {
+		Username string
+	}
+	Community struct {
+		Name string
+	}
 }
 
 type CreatePostParams struct {

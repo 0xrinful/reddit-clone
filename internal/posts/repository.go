@@ -13,7 +13,7 @@ import (
 
 type Repository interface {
 	GetByID(ctx context.Context, id int64) (*Post, error)
-	GetDetails(ctx context.Context, id int64) (*PostDetails, error)
+	GetWithAuthorAndCommunity(ctx context.Context, id int64) (*PostWithRelations, error)
 	Create(ctx context.Context, p *Post) error
 	Update(ctx context.Context, p UpdatePostParams) error
 	Delete(ctx context.Context, id, userID int64) error
@@ -58,7 +58,10 @@ func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, erro
 	return &p, nil
 }
 
-func (r *postgresRepository) GetDetails(ctx context.Context, id int64) (*PostDetails, error) {
+func (r *postgresRepository) GetWithAuthorAndCommunity(
+	ctx context.Context,
+	id int64,
+) (*PostWithRelations, error) {
 	query := `
 		SELECT 
 			p.id, p.title, p.body, p.created_at, p.score, p.views, p.version,
@@ -69,7 +72,7 @@ func (r *postgresRepository) GetDetails(ctx context.Context, id int64) (*PostDet
 		JOIN users u ON p.user_id = u.id
 		WHERE p.id = $1`
 
-	var p PostDetails
+	var p PostWithRelations
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -192,12 +195,12 @@ func (r *postgresRepository) ListSummaries(
 		if cursor != nil {
 			query.Where("(p.created_at, p.id) < (?, ?)", cursor.CreatedAt, cursor.ID)
 		}
-		query.Order("p.created_at DESC, p.id DESC ")
+		query.Order("p.created_at DESC, p.id DESC")
 	case SortByTop, SortByHot:
 		if cursor != nil {
 			query.Where("(p.score, p.id) < (?, ?)", cursor.Score, cursor.ID)
 		}
-		query.Order("p.score DESC, p.id DESC ")
+		query.Order("p.score DESC, p.id DESC")
 	default:
 		panic("invalid sort value")
 	}
@@ -219,7 +222,7 @@ func (r *postgresRepository) ListSummaries(
 		var p PostSummary
 		err = rows.Scan(
 			&p.ID, &p.Title, &p.Body, &p.Score, &p.CreatedAt,
-			&p.AuthorName, &p.CommunityName,
+			&p.Author.Username, &p.Community.Name,
 		)
 		if err != nil {
 			return nil, err

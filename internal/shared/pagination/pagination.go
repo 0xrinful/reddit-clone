@@ -14,6 +14,11 @@ const (
 
 var ErrInvalidCursor = errors.New("invalid cursor")
 
+type Params struct {
+	Limit  int
+	Cursor *Cursor
+}
+
 type Cursor struct {
 	ID        int64
 	CreatedAt *time.Time
@@ -90,9 +95,4 @@ func Decode(s string) (*Cursor, error) {
 	}
 
 	return &c, nil
-}
-
-type Params struct {
-	Limit  int
-	Cursor *Cursor
 }

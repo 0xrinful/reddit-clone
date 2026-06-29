@@ -23,6 +23,7 @@ type Password struct {
 }
 
 func (p *Password) Set(plain string) error {
+	// TODO: replace the default params
 	hash, err := argon2id.CreateHash(plain, argon2id.DefaultParams)
 	if err != nil {
 		return err

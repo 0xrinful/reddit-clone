@@ -30,7 +30,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	user, authenticated := request.GetUser(r)
 
-	post, err := h.service.GetDetails(r.Context(), id)
+	post, err := h.service.Get(r.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
@@ -79,7 +79,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	headers := make(http.Header)
-	headers.Set("Location", fmt.Sprintf("/api/v1/r/%s/posts/%d", community.Name, post.ID))
+	headers.Set("Location", fmt.Sprintf("/api/v1/posts/%d", post.ID))
 
 	h.responder.JSON(w, http.StatusCreated, postToPostOwnerDTO(post, community.Name), headers)
 }
@@ -173,18 +173,17 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		Sort:        sort,
 	}
 
-	posts, err := h.service.ListSummaries(r.Context(), params)
+	posts, err := h.service.List(r.Context(), params)
 	if err != nil {
 		h.responder.ServerError(w, err)
 		return
 	}
 
 	var nextCursor string
-	var next *pagination.Cursor
 	if len(posts) > limit {
 		page := posts[:limit] // trim extra row used for next page check
 		last := page[len(page)-1]
-		next = &pagination.Cursor{ID: last.ID}
+		next := &pagination.Cursor{ID: last.ID}
 
 		switch sort {
 		case SortByNew:

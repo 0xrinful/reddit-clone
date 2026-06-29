@@ -6,11 +6,11 @@ const (
 )
 
 func ValidatePostTitle(v *Validator, title string) {
-	v.Check(NotBlank(title), "title", "must not be blank")
+	v.Check(NotBlank(title), "title", "is required")
 	v.Check(MaxLength(title, postTitleMax), "title", "must not exceed 120 characters")
 }
 
 func ValidatePostBody(v *Validator, body string) {
-	v.Check(NotBlank(body), "body", "must not be blank")
+	v.Check(NotBlank(body), "body", "is required")
 	v.Check(MaxLength(body, postBodyMax), "body", "must not exceed 40000 characters")
 }

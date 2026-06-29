@@ -86,8 +86,11 @@ func (r *postgresRepository) GetByEmail(ctx context.Context, email string) (*Use
 	}
 
 	if activatedAt.Valid {
-		user.ActivatedAt = &activatedAt.Time
+		activatedAt := activatedAt.Time.UTC()
+		user.ActivatedAt = &activatedAt
 	}
+
+	user.CreatedAt = user.CreatedAt.UTC()
 	return &user, nil
 }
 

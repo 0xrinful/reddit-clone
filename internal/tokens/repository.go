@@ -13,7 +13,7 @@ import (
 type Repository interface {
 	Insert(ctx context.Context, token *Token) error
 	DeleteAllForUser(ctx context.Context, scope string, userID int64) error
-	GetByHash(ctx context.Context, scope string, hashed []byte) (*Token, error)
+	GetByHash(ctx context.Context, scope string, hash []byte) (*Token, error)
 	DeleteByHash(ctx context.Context, hash []byte) error
 }
 
@@ -56,7 +56,7 @@ func (r *postgresRepository) DeleteAllForUser(
 func (r *postgresRepository) GetByHash(
 	ctx context.Context,
 	scope string,
-	hashed []byte,
+	hash []byte,
 ) (*Token, error) {
 	query := `
 		SELECT id, hash, user_id, expiry, scope FROM tokens
@@ -67,7 +67,7 @@ func (r *postgresRepository) GetByHash(
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, hashed, scope).
+	err := r.db.QueryRowContext(ctx, query, hash, scope).
 		Scan(&token.ID, &token.Hash, &token.UserID, &token.Expiry, &token.Scope)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errs.ErrInvalidToken

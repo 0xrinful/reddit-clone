@@ -5,11 +5,11 @@ import (
 )
 
 type Service interface {
-	GetDetails(ctx context.Context, id int64) (*PostDetails, error)
+	Get(ctx context.Context, id int64) (*PostWithRelations, error)
 	Create(ctx context.Context, params CreatePostParams) (*Post, error)
 	Update(ctx context.Context, params UpdatePostParams) error
 	Delete(ctx context.Context, id, userID int64) error
-	ListSummaries(ctx context.Context, params ListPostParams) ([]*PostSummary, error)
+	List(ctx context.Context, params ListPostParams) ([]*PostSummary, error)
 }
 
 type service struct {
@@ -42,15 +42,15 @@ func (s *service) Update(ctx context.Context, params UpdatePostParams) error {
 	return s.repo.Update(ctx, params)
 }
 
-func (s *service) GetDetails(ctx context.Context, id int64) (*PostDetails, error) {
-	return s.repo.GetDetails(ctx, id)
+func (s *service) Get(ctx context.Context, id int64) (*PostWithRelations, error) {
+	return s.repo.GetWithAuthorAndCommunity(ctx, id)
 }
 
 func (s *service) Delete(ctx context.Context, id, userID int64) error {
 	return s.repo.Delete(ctx, id, userID)
 }
 
-func (s *service) ListSummaries(
+func (s *service) List(
 	ctx context.Context,
 	params ListPostParams,
 ) ([]*PostSummary, error) {

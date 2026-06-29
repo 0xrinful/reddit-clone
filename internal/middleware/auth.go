@@ -39,8 +39,7 @@ func (m *Middleware) Authenticate(svc tokens.Service) func(http.Handler) http.Ha
 				return
 			}
 
-			u := &request.UserCtx{ID: claims.UserID}
-			r = request.WithUser(r, u)
+			r = request.WithUser(r, &request.UserCtx{ID: claims.UserID})
 			next.ServeHTTP(w, r)
 		})
 	}
