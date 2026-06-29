@@ -5,7 +5,7 @@ import (
 )
 
 type Service interface {
-	Get(ctx context.Context, id int64) (*PostWithRelations, error)
+	Get(ctx context.Context, id int64) (*PostView, error)
 	Create(ctx context.Context, params CreatePostParams) (*Post, error)
 	Update(ctx context.Context, params UpdatePostParams) error
 	Delete(ctx context.Context, id, userID int64) error
@@ -42,8 +42,8 @@ func (s *service) Update(ctx context.Context, params UpdatePostParams) error {
 	return s.repo.Update(ctx, params)
 }
 
-func (s *service) Get(ctx context.Context, id int64) (*PostWithRelations, error) {
-	return s.repo.GetWithAuthorAndCommunity(ctx, id)
+func (s *service) Get(ctx context.Context, id int64) (*PostView, error) {
+	return s.repo.GetView(ctx, id)
 }
 
 func (s *service) Delete(ctx context.Context, id, userID int64) error {

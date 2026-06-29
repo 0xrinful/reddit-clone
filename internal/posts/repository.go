@@ -13,7 +13,7 @@ import (
 
 type Repository interface {
 	GetByID(ctx context.Context, id int64) (*Post, error)
-	GetWithAuthorAndCommunity(ctx context.Context, id int64) (*PostWithRelations, error)
+	GetView(ctx context.Context, id int64) (*PostView, error)
 	Create(ctx context.Context, p *Post) error
 	Update(ctx context.Context, p UpdatePostParams) error
 	Delete(ctx context.Context, id, userID int64) error
@@ -58,10 +58,10 @@ func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, erro
 	return &p, nil
 }
 
-func (r *postgresRepository) GetWithAuthorAndCommunity(
+func (r *postgresRepository) GetView(
 	ctx context.Context,
 	id int64,
-) (*PostWithRelations, error) {
+) (*PostView, error) {
 	query := `
 		SELECT 
 			p.id, p.title, p.body, p.created_at, p.score, p.views, p.version,
@@ -72,7 +72,7 @@ func (r *postgresRepository) GetWithAuthorAndCommunity(
 		JOIN users u ON p.user_id = u.id
 		WHERE p.id = $1`
 
-	var p PostWithRelations
+	var p PostView
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()

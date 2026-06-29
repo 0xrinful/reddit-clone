@@ -18,14 +18,18 @@ type Post struct {
 	Version     int32
 }
 
-type PostWithRelations struct {
+type PostAuthor struct {
+	Username string
+}
+
+type PostCommunity struct {
+	Name string
+}
+
+type PostView struct {
 	Post
-	Author struct {
-		Username string
-	}
-	Community struct {
-		Name string
-	}
+	Author    PostAuthor
+	Community PostCommunity
 }
 
 type PostSummary struct {
@@ -34,12 +38,8 @@ type PostSummary struct {
 	Body      string
 	Score     int64
 	CreatedAt time.Time
-	Author    struct {
-		Username string
-	}
-	Community struct {
-		Name string
-	}
+	Author    PostAuthor
+	Community PostCommunity
 }
 
 type CreatePostParams struct {
