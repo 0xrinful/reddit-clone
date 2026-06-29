@@ -43,7 +43,7 @@ func Load() Config {
 	var cfg Config
 
 	flag.IntVar(&cfg.Port, "port", 8000, "server port")
-	flag.StringVar(&cfg.DB.DSN, "db-dsn", os.Getenv("JWT_SECRET"), "PostgreSQL DSN")
+	flag.StringVar(&cfg.DB.DSN, "db-dsn", os.Getenv("DB_DSN"), "PostgreSQL DSN")
 	flag.IntVar(&cfg.DB.MaxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.DB.MaxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(

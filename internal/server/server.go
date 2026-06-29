@@ -28,9 +28,10 @@ type Server struct {
 	tokensSvc      tokens.Service
 
 	// handlers (for routes)
-	posts *posts.Handler
-	users *users.Handler
-	auth  *auth.Handler
+	posts       *posts.Handler
+	communities *communities.Handler
+	users       *users.Handler
+	auth        *auth.Handler
 }
 
 func New(
@@ -46,6 +47,7 @@ func New(
 	responder := response.NewResponder(logger)
 
 	postsHandler := posts.NewHandler(postsSvc, responder)
+	communitiesHandler := communities.NewHandler(communitiesSvc, responder)
 	usersHandler := users.NewHandler(usersSvc, responder)
 	authHandler := auth.NewHandler(authSvc, tokensSvc, responder)
 
@@ -57,9 +59,10 @@ func New(
 		communitiesSvc: communitiesSvc,
 		tokensSvc:      tokensSvc,
 
-		posts: postsHandler,
-		users: usersHandler,
-		auth:  authHandler,
+		posts:       postsHandler,
+		communities: communitiesHandler,
+		users:       usersHandler,
+		auth:        authHandler,
 	}
 
 	router := server.setupRoutes(responder)

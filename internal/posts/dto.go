@@ -73,6 +73,15 @@ type PostSummaryDTO struct {
 }
 
 // mapping helpers
+func postToView(p *Post, communityName string) *PostView {
+	return &PostView{
+		Post: *p,
+		Community: PostCommunity{
+			Name: communityName,
+		},
+	}
+}
+
 func toPostPublicDTO(p *PostView) PostPublicDTO {
 	return PostPublicDTO{
 		ID:    p.ID,
@@ -96,27 +105,6 @@ func toPostOwnerDTO(p *PostView) PostOwnerDTO {
 		PostPublicDTO: toPostPublicDTO(p),
 		Views:         p.Views,
 		Version:       p.Version,
-	}
-}
-
-func postToPostOwnerDTO(p *Post, communityName string) PostOwnerDTO {
-	return PostOwnerDTO{
-		PostPublicDTO: PostPublicDTO{
-			ID:    p.ID,
-			Title: p.Title,
-			Body:  p.Body,
-			Score: p.Score,
-			Author: AuthorDTO{
-				ID: p.UserID,
-			},
-			Community: CommunityDTO{
-				ID:   p.CommunityID,
-				Name: communityName,
-			},
-			CreatedAt: p.CreatedAt,
-		},
-		Views:   p.Views,
-		Version: p.Version,
 	}
 }
 

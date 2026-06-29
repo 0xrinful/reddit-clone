@@ -120,7 +120,7 @@ func (m *Middleware) AuthLimit() func(http.Handler) http.Handler {
 }
 
 func (m *Middleware) StrictLimit() func(http.Handler) http.Handler {
-	return m.RateLimit("strict", 3, time.Hour*1, 1*time.Hour)
+	return m.RateLimit("strict", 10, time.Hour*1, 1*time.Hour)
 }
 
 func (m *Middleware) RegisterLimit() func(http.Handler) http.Handler {

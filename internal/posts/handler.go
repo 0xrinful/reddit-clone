@@ -81,7 +81,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/api/v1/posts/%d", post.ID))
 
-	h.responder.JSON(w, http.StatusCreated, postToPostOwnerDTO(post, community.Name), headers)
+	view := postToView(post, community.Name)
+	h.responder.JSON(w, http.StatusCreated, toPostOwnerResponse(view), headers)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {

@@ -43,11 +43,12 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 		// ─── COMMUNITIES ──────────────────────────────────────────────────
 		r.Route("/communities", func(r *rush.Router) {
 			r.Get("/", nil)
-			r.Post("/", nil)
+			r.Post("/", s.communities.Create)
 
 			r.Route("/{community_name}", func(r *rush.Router) {
-				r.Use(m.LoadCommunity(s.communitiesSvc))
+				r.With(m.ReadLimit()).Get("/", s.communities.Get)
 
+				r.Use(m.LoadCommunity(s.communitiesSvc))
 				r.With(m.ReadLimit()).Get("/posts", s.posts.List)
 				r.With(m.WriteLimit(), m.RequireAuth).Post("/posts", s.posts.Create)
 			})
