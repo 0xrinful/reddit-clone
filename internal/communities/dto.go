@@ -17,6 +17,24 @@ func (r *CreateCommunitytRequest) Validate(v *validator.Validator) {
 	validator.ValidateCommunityDescription(v, r.Description)
 }
 
+type UpdateCommunitytRequest struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+}
+
+func (r *UpdateCommunitytRequest) Validate(v *validator.Validator) {
+	if r.Name == nil && r.Description == nil {
+		v.AddError("request", "must provide at least one field")
+		return
+	}
+	if r.Name != nil {
+		validator.ValidateCommunityName(v, *r.Name)
+	}
+	if r.Description != nil {
+		validator.ValidateCommunityDescription(v, *r.Description)
+	}
+}
+
 // DTOs
 type OwnerDTO struct {
 	ID       int64  `json:"id,omitempty"`
@@ -49,7 +67,7 @@ func toCommunityDTO(c *CommunityView) CommunityDTO {
 
 	if c.OwnerID != nil {
 		dto.Owner = &OwnerDTO{
-			ID:       c.ID,
+			ID:       *c.OwnerID,
 			Username: c.Owner.Username,
 		}
 	}

@@ -54,7 +54,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := CreateCommunityParams{
+	params := CreateParams{
 		Name:        input.Name,
 		OwnerID:     user.ID,
 		Description: input.Description,
@@ -81,8 +81,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("community_name")
-
 	user, _ := request.GetUser(r)
+
 	err := h.service.Delete(r.Context(), name, user.ID)
 	if err != nil {
 		switch {
@@ -96,4 +96,42 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("community_name")
+	user, _ := request.GetUser(r)
+
+	var input UpdateCommunitytRequest
+	err := request.DecodeJSON(w, r, &input)
+	if err != nil {
+		h.responder.DecodeError(w, err)
+		return
+	}
+
+	v := validator.New()
+	if input.Validate(v); !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	p := UpdateParams(input)
+	community, err := h.service.Update(r.Context(), name, user.ID, p)
+	if err != nil {
+		switch {
+		case errors.Is(err, errs.ErrNotFound):
+			h.responder.NotFound(w, r)
+		case errors.Is(err, errs.ErrForbidden):
+			h.responder.Forbidden(w)
+		case errors.Is(err, errs.ErrDuplicateCommunityName):
+			v.AddError("name", "community name is already in use")
+			h.responder.ValidationError(w, v.Errors)
+		default:
+			h.responder.ServerError(w, err)
+		}
+		return
+	}
+
+	view := communityToView(community)
+	h.responder.JSON(w, http.StatusOK, toCommunityResponse(view))
 }

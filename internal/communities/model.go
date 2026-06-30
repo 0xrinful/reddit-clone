@@ -20,8 +20,13 @@ type CommunityView struct {
 	Owner *CommunityOwner
 }
 
-type CreateCommunityParams struct {
+type CreateParams struct {
 	Name        string
 	OwnerID     int64
 	Description string
+}
+
+type UpdateParams struct {
+	Name        *string
+	Description *string
 }

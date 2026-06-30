@@ -10,6 +10,7 @@ import (
 
 	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
+	"github.com/0xrinful/reddit-clone/internal/shared/query"
 )
 
 type Repository interface {
@@ -17,6 +18,7 @@ type Repository interface {
 	GetViewByName(ctx context.Context, name string) (*CommunityView, error)
 	Create(ctx context.Context, c *Community) error
 	Delete(ctx context.Context, id int64) error
+	Update(ctx context.Context, id int64, p UpdateParams) (*Community, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -33,31 +35,12 @@ func (r *postgresRepository) GetByName(ctx context.Context, name string) (*Commu
 		FROM communities 
 		WHERE name = $1`
 
-	var c Community
-	var ownerID sql.NullInt64
-
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, name).Scan(
-		&c.ID, &c.Name, &ownerID,
-		&c.Description, &c.CreatedAt, &c.Version,
-	)
+	row := r.db.QueryRowContext(ctx, query, name)
 
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errs.ErrNotFound
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if ownerID.Valid {
-		c.OwnerID = &ownerID.Int64
-	}
-	c.CreatedAt = c.CreatedAt.UTC()
-
-	return &c, nil
+	return scanCommunity(row)
 }
 
 func (r *postgresRepository) GetViewByName(
@@ -149,4 +132,69 @@ func (r *postgresRepository) Delete(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+func (r *postgresRepository) Update(
+	ctx context.Context,
+	id int64,
+	p UpdateParams,
+) (*Community, error) {
+	q := query.New()
+	q.Update("communities")
+
+	if p.Name != nil {
+		q.Set("name = ?", *p.Name)
+	}
+
+	if p.Description != nil {
+		q.Set("description = ?", *p.Description)
+	}
+
+	q.Set("version = version + 1")
+
+	q.Where("id = ?", id)
+	q.Returning("id, name, owner_id, description, created_at, version")
+	query, args := q.ToSql()
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	row := r.db.QueryRowContext(ctx, query, args...)
+	community, err := scanCommunity(row)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+			switch pqErr.Constraint {
+			case "communities_name_key":
+				return nil, errs.ErrDuplicateCommunityName
+			}
+		}
+		return nil, err
+	}
+
+	return community, nil
+}
+
+func scanCommunity(row *sql.Row) (*Community, error) {
+	var c Community
+	var ownerID sql.NullInt64
+
+	err := row.Scan(
+		&c.ID, &c.Name, &ownerID,
+		&c.Description, &c.CreatedAt, &c.Version,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errs.ErrNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if ownerID.Valid {
+		c.OwnerID = &ownerID.Int64
+	}
+	c.CreatedAt = c.CreatedAt.UTC()
+	return &c, nil
 }

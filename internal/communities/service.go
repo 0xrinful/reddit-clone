@@ -9,8 +9,9 @@ import (
 type Service interface {
 	GetByName(ctx context.Context, name string) (*Community, error)
 	GetViewByName(ctx context.Context, name string) (*CommunityView, error)
-	Create(ctx context.Context, p CreateCommunityParams) (*Community, error)
-	Delete(ctx context.Context, name string, userID int64) error
+	Create(ctx context.Context, p CreateParams) (*Community, error)
+	Delete(ctx context.Context, name string, requesterID int64) error
+	Update(ctx context.Context, name string, requesterID int64, p UpdateParams) (*Community, error)
 }
 
 type service struct {
@@ -29,7 +30,7 @@ func (s *service) GetViewByName(ctx context.Context, name string) (*CommunityVie
 	return s.repo.GetViewByName(ctx, name)
 }
 
-func (s *service) Create(ctx context.Context, p CreateCommunityParams) (*Community, error) {
+func (s *service) Create(ctx context.Context, p CreateParams) (*Community, error) {
 	c := &Community{
 		Description: p.Description,
 		Name:        p.Name,
@@ -43,15 +44,34 @@ func (s *service) Create(ctx context.Context, p CreateCommunityParams) (*Communi
 	return c, nil
 }
 
-func (s *service) Delete(ctx context.Context, name string, userID int64) error {
+func (s *service) Delete(ctx context.Context, name string, requesterID int64) error {
 	community, err := s.GetByName(ctx, name)
 	if err != nil {
 		return err
 	}
 
-	if community.OwnerID == nil || *community.OwnerID != userID {
+	if community.OwnerID == nil || *community.OwnerID != requesterID {
 		return errs.ErrForbidden
 	}
 
 	return s.repo.Delete(ctx, community.ID)
+}
+
+func (s *service) Update(
+	ctx context.Context,
+	name string,
+	requesterID int64,
+	p UpdateParams,
+) (*Community, error) {
+	community, err := s.repo.GetByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: allow mods in the feature
+	if community.OwnerID == nil || *community.OwnerID != requesterID {
+		return nil, errs.ErrForbidden
+	}
+
+	return s.repo.Update(ctx, community.ID, p)
 }
