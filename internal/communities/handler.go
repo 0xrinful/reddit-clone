@@ -64,7 +64,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrDuplicateCommunityName):
-			v.AddError("name", "name is already in use")
+			v.AddError("name", "community name is already in use")
 			h.responder.ValidationError(w, v.Errors)
 		default:
 			h.responder.ServerError(w, err)
@@ -77,4 +77,23 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	view := communityToView(community)
 	h.responder.JSON(w, http.StatusOK, toCommunityResponse(view))
+}
+
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("community_name")
+
+	user, _ := request.GetUser(r)
+	err := h.service.Delete(r.Context(), name, user.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, errs.ErrNotFound):
+			h.responder.NotFound(w, r)
+		case errors.Is(err, errs.ErrForbidden):
+			h.responder.Forbidden(w)
+		default:
+			h.responder.ServerError(w, err)
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

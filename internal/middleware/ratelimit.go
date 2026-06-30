@@ -124,7 +124,7 @@ func (m *Middleware) StrictLimit() func(http.Handler) http.Handler {
 }
 
 func (m *Middleware) RegisterLimit() func(http.Handler) http.Handler {
-	return m.RateLimit("register", 5, time.Hour*12, 24*time.Hour)
+	return m.RateLimit("register", 10, time.Hour*2, 2*time.Hour)
 }
 
 // TODO: support X-Forwarded-For, X-Real-IP, ...

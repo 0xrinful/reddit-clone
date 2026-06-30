@@ -91,5 +91,5 @@ func (r *Responder) Unauthorized(w http.ResponseWriter) {
 }
 
 func (r *Responder) Forbidden(w http.ResponseWriter) {
-	r.Error(w, http.StatusForbidden, "forbidden", "forbidden")
+	r.Error(w, http.StatusForbidden, "forbidden", "access denied")
 }

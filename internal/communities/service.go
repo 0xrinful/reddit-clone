@@ -1,11 +1,16 @@
 package communities
 
-import "context"
+import (
+	"context"
+
+	"github.com/0xrinful/reddit-clone/internal/shared/errs"
+)
 
 type Service interface {
 	GetByName(ctx context.Context, name string) (*Community, error)
 	GetViewByName(ctx context.Context, name string) (*CommunityView, error)
 	Create(ctx context.Context, p CreateCommunityParams) (*Community, error)
+	Delete(ctx context.Context, name string, userID int64) error
 }
 
 type service struct {
@@ -36,4 +41,17 @@ func (s *service) Create(ctx context.Context, p CreateCommunityParams) (*Communi
 	}
 
 	return c, nil
+}
+
+func (s *service) Delete(ctx context.Context, name string, userID int64) error {
+	community, err := s.GetByName(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	if community.OwnerID == nil || *community.OwnerID != userID {
+		return errs.ErrForbidden
+	}
+
+	return s.repo.Delete(ctx, community.ID)
 }

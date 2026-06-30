@@ -16,6 +16,7 @@ type Repository interface {
 	GetByName(ctx context.Context, name string) (*Community, error)
 	GetViewByName(ctx context.Context, name string) (*CommunityView, error)
 	Create(ctx context.Context, c *Community) error
+	Delete(ctx context.Context, id int64) error
 }
 
 func NewRepository(db database.DB) Repository {
@@ -124,5 +125,28 @@ func (r *postgresRepository) Create(ctx context.Context, c *Community) error {
 	}
 
 	c.CreatedAt = c.CreatedAt.UTC()
+	return nil
+}
+
+func (r *postgresRepository) Delete(ctx context.Context, id int64) error {
+	query := `DELETE FROM communities WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows == 0 {
+		return errs.ErrNotFound
+	}
+
 	return nil
 }
