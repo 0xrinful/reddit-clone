@@ -27,7 +27,7 @@ func (r *Responder) JSON(w http.ResponseWriter, status int, data any, headers ..
 		r.logger.Error("json marshal failed", "err", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("{\"error\":\"internal server error\"}\n"))
+		w.Write([]byte(`{"error":"internal server error","code":"internal_error"}` + "\n"))
 		return
 	}
 
@@ -42,53 +42,54 @@ func (r *Responder) JSON(w http.ResponseWriter, status int, data any, headers ..
 	w.Write(js)
 }
 
-func (r *Responder) Error(w http.ResponseWriter, status int, error any) {
-	r.JSON(w, status, envelope{"error": error})
+func (r *Responder) Error(w http.ResponseWriter, status int, code string, message any) {
+	r.JSON(w, status, envelope{"error": message, "code": code})
 }
 
 func (r *Responder) NotFound(w http.ResponseWriter, rq *http.Request) {
-	r.Error(w, http.StatusNotFound, "resource not found")
+	r.Error(w, http.StatusNotFound, "not_found", "resource not found")
 }
 
 func (r *Responder) MethodNotAllowed(w http.ResponseWriter, rq *http.Request) {
-	r.Error(w, http.StatusMethodNotAllowed, fmt.Sprintf("%s method not allowed", rq.Method))
+	r.Error(w, http.StatusMethodNotAllowed, "method_not_allowed",
+		fmt.Sprintf("%s method not allowed", rq.Method))
 }
 
 func (r *Responder) ServerError(w http.ResponseWriter, err error) {
 	r.logger.Error("internal server error", "err", err)
-	r.Error(w, http.StatusInternalServerError, "internal server error")
+	r.Error(w, http.StatusInternalServerError, "internal_error", "internal server error")
 }
 
 func (r *Responder) DecodeError(w http.ResponseWriter, err error) {
 	var decodeErr *request.DecodeError
 	if errors.As(err, &decodeErr) {
-		r.Error(w, decodeErr.Status, decodeErr.Message)
+		r.Error(w, decodeErr.Status, "bad_request", decodeErr.Message)
 		return
 	}
 	r.ServerError(w, err)
 }
 
 func (r *Responder) ValidationError(w http.ResponseWriter, errors map[string]string) {
-	r.Error(w, http.StatusUnprocessableEntity, errors)
+	r.Error(w, http.StatusUnprocessableEntity, "validation_error", errors)
 }
 
 func (r *Responder) TooManyRequests(w http.ResponseWriter) {
-	r.Error(w, http.StatusTooManyRequests, "too many requests")
+	r.Error(w, http.StatusTooManyRequests, "too_many_requests", "too many requests")
 }
 
 func (r *Responder) InvalidCredentials(w http.ResponseWriter) {
-	r.Error(w, http.StatusUnauthorized, "invalid credentials")
+	r.Error(w, http.StatusUnauthorized, "invalid_credentials", "invalid credentials")
 }
 
 func (r *Responder) InvalidToken(w http.ResponseWriter) {
 	w.Header().Set("WWW-Authenticate", "Bearer")
-	r.Error(w, http.StatusUnauthorized, "invalid or missing token")
+	r.Error(w, http.StatusUnauthorized, "invalid_token", "invalid or missing token")
 }
 
 func (r *Responder) Unauthorized(w http.ResponseWriter) {
-	r.Error(w, http.StatusUnauthorized, "authentication required")
+	r.Error(w, http.StatusUnauthorized, "unauthorized", "authentication required")
 }
 
 func (r *Responder) Forbidden(w http.ResponseWriter) {
-	r.Error(w, http.StatusForbidden, "forbidden")
+	r.Error(w, http.StatusForbidden, "forbidden", "forbidden")
 }

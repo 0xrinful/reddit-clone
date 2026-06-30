@@ -12,4 +12,5 @@ var (
 	ErrInvalidToken           = errors.New("invalid or expired token")
 	ErrInvalidCredentials     = errors.New("invalid credentials")
 	ErrRefreshTokenReuse      = errors.New("refresh token reuse")
+	ErrForbidden              = errors.New("forbidden")
 )
