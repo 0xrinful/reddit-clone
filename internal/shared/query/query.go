@@ -15,12 +15,13 @@ const (
 type Query struct {
 	kind queryType
 
-	prefix string
-	table  string
-	cols   string
-	order  string
-	group  string
-	limit  int
+	prefix    string
+	table     string
+	cols      string
+	order     string
+	group     string
+	returning string
+	limit     int
 
 	joins  strings.Builder
 	sets   strings.Builder
@@ -89,11 +90,15 @@ func (q *Query) Where(clause string, values ...any) {
 }
 
 func (q *Query) Order(clause string) {
-	q.order = "ORDER BY " + clause
+	q.order = " ORDER BY " + clause
 }
 
 func (q *Query) Group(clause string) {
-	q.group = "GROUP BY " + clause
+	q.group = " GROUP BY " + clause
+}
+
+func (q *Query) Returning(clause string) {
+	q.returning = " RETURNING " + clause
 }
 
 func (q *Query) Join(clause string) {
@@ -127,6 +132,10 @@ func (q *Query) buildUpdate() (string, []any) {
 	b.WriteString(q.sets.String())
 	b.WriteString(q.wheres.String())
 
+	if q.returning != "" {
+		b.WriteString(q.returning)
+	}
+
 	return b.String(), q.args
 }
 
@@ -149,12 +158,10 @@ func (q *Query) buildSelect() (string, []any) {
 	b.WriteString(q.wheres.String())
 
 	if q.group != "" {
-		b.WriteByte(' ')
 		b.WriteString(q.group)
 	}
 
 	if q.order != "" {
-		b.WriteByte(' ')
 		b.WriteString(q.order)
 	}
 
