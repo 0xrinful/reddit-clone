@@ -9,7 +9,7 @@ const (
 )
 
 func ValidateCommunityName(v *Validator, name string) {
-	v.Check(NotBlank(name), "name", "is required")
+	v.Check(NotBlank(name), "name", "must not be empty")
 	v.Check(
 		MinLength(name, communityNameMin),
 		"name",
@@ -23,7 +23,7 @@ func ValidateCommunityName(v *Validator, name string) {
 }
 
 func ValidateCommunityDescription(v *Validator, description string) {
-	v.Check(NotBlank(description), "description", "is required")
+	v.Check(NotBlank(description), "description", "must not be empty")
 	v.Check(
 		MaxLength(description, communityDescriptionMax),
 		"description",

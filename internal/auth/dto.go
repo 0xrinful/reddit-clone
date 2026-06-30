@@ -23,7 +23,7 @@ type ActivateUserRequest struct {
 }
 
 func (r *ActivateUserRequest) Validate(v *validator.Validator) {
-	v.Check(r.Token != "", "token", "is required")
+	v.Check(r.Token != "", "token", "must not be empty")
 }
 
 type SendActivationEmailRequest struct {
@@ -49,7 +49,7 @@ type RefreshRequest struct {
 }
 
 func (r *RefreshRequest) Validate(v *validator.Validator) {
-	v.Check(r.Token != "", "refresh_token", "is required")
+	v.Check(r.Token != "", "refresh_token", "must not be empty")
 }
 
 type LogoutRequest struct {
@@ -57,7 +57,7 @@ type LogoutRequest struct {
 }
 
 func (r *LogoutRequest) Validate(v *validator.Validator) {
-	v.Check(r.Token != "", "refresh_token", "is required")
+	v.Check(r.Token != "", "refresh_token", "must not be empty")
 }
 
 // response envelope

@@ -42,18 +42,16 @@ type PostSummary struct {
 	Community PostCommunity
 }
 
-type CreatePostParams struct {
+type CreateParams struct {
 	UserID      int64
 	CommunityID int64
 	Title       string
 	Body        string
 }
 
-type UpdatePostParams struct {
-	ID     int64
-	UserID int64
-	Title  *string
-	Body   *string
+type UpdateParams struct {
+	Title *string
+	Body  *string
 }
 
 type SortBy string
@@ -73,7 +71,7 @@ func (s SortBy) IsValid() bool {
 	}
 }
 
-type ListPostParams struct {
+type ListParams struct {
 	Sort        SortBy
 	Pagination  pagination.Params
 	CommunityID int64

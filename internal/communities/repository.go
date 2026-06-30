@@ -153,7 +153,7 @@ func (r *postgresRepository) Update(
 	q.Set("version = version + 1")
 
 	q.Where("id = ?", id)
-	q.Returning("id, name, owner_id, description, created_at, version")
+	q.Returning("*")
 	query, args := q.ToSql()
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)

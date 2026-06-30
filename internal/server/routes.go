@@ -49,6 +49,7 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 				r.With(m.ReadLimit()).Get("/", s.communities.Get)
 				r.Group(func(r *rush.Router) {
 					r.Use(m.WriteLimit(), m.RequireAuth)
+					r.Patch("/", s.communities.Update)
 					r.Delete("/", s.communities.Delete)
 				})
 

@@ -66,7 +66,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := CreatePostParams{
+	params := CreateParams{
 		UserID:      user.ID,
 		CommunityID: community.ID,
 		Title:       input.Title,
@@ -107,25 +107,26 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, _ := request.GetUser(r)
-	params := UpdatePostParams{
-		ID:     id,
-		UserID: user.ID,
-		Title:  input.Title,
-		Body:   input.Body,
+	params := UpdateParams{
+		Title: input.Title,
+		Body:  input.Body,
 	}
 
-	err = h.service.Update(r.Context(), params)
+	post, err := h.service.Update(r.Context(), id, user.ID, params)
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
+		case errors.Is(err, errs.ErrForbidden):
+			h.responder.Forbidden(w)
 		default:
 			h.responder.ServerError(w, err)
 		}
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	view := postToView(post, "")
+	h.responder.JSON(w, http.StatusCreated, toPostOwnerResponse(view))
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +143,8 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
+		case errors.Is(err, errs.ErrForbidden):
+			h.responder.Forbidden(w)
 		default:
 			h.responder.ServerError(w, err)
 		}
@@ -168,7 +171,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	limit := pageParams.Limit
 	pageParams.Limit += 1 // used to determine if there is a next cursor
 
-	params := ListPostParams{
+	params := ListParams{
 		CommunityID: community.ID,
 		Pagination:  pageParams,
 		Sort:        sort,

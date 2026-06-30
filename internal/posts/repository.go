@@ -15,9 +15,9 @@ type Repository interface {
 	GetByID(ctx context.Context, id int64) (*Post, error)
 	GetView(ctx context.Context, id int64) (*PostView, error)
 	Create(ctx context.Context, p *Post) error
-	Update(ctx context.Context, p UpdatePostParams) error
-	Delete(ctx context.Context, id, userID int64) error
-	ListSummaries(ctx context.Context, params ListPostParams) ([]*PostSummary, error)
+	Update(ctx context.Context, id int64, p UpdateParams) (*Post, error)
+	Delete(ctx context.Context, id int64) error
+	ListSummaries(ctx context.Context, params ListParams) ([]*PostSummary, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -31,31 +31,15 @@ type postgresRepository struct {
 func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, error) {
 	query := `
 		SELECT 
-			p.id, p.title, p.body, p.created_at, p.score, p.views, p.version,
-			p.user_id, p.community_id  
+			p.id, p.title, p.body, p.user_id, p.community_id, p.views, p.score, p.created_at, p.version
 		FROM posts p 
 		WHERE p.id = $1`
-
-	var p Post
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Score, &p.Views, &p.Version,
-		&p.UserID, &p.CommunityID,
-	)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errs.ErrNotFound
-	}
-
-	if err != nil {
-		return nil, err
-	}
-	p.CreatedAt = p.CreatedAt.UTC()
-
-	return &p, nil
+	row := r.db.QueryRowContext(ctx, query, id)
+	return scanPost(row)
 }
 
 func (r *postgresRepository) GetView(
@@ -115,7 +99,7 @@ func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
 	return nil
 }
 
-func (r *postgresRepository) Update(ctx context.Context, p UpdatePostParams) error {
+func (r *postgresRepository) Update(ctx context.Context, id int64, p UpdateParams) (*Post, error) {
 	q := query.New()
 	q.Update("posts")
 
@@ -129,38 +113,24 @@ func (r *postgresRepository) Update(ctx context.Context, p UpdatePostParams) err
 
 	q.Set("version = version + 1")
 
-	q.Where("id = ? AND user_id = ?", p.ID, p.UserID)
+	q.Where("id = ?", id)
+	q.Returning("*")
 	query, args := q.ToSql()
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	result, err := r.db.ExecContext(ctx, query, args...)
-	if err != nil {
-		return err
-	}
-
-	affectedRows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if affectedRows == 0 {
-		return errs.ErrNotFound
-	}
-
-	return nil
+	row := r.db.QueryRowContext(ctx, query, args...)
+	return scanPost(row)
 }
 
-func (r *postgresRepository) Delete(ctx context.Context, id, userID int64) error {
-	query := `
-		DELETE FROM posts 
-		WHERE id = $1 AND user_id = $2`
+func (r *postgresRepository) Delete(ctx context.Context, id int64) error {
+	query := `DELETE FROM posts WHERE id = $1`
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	result, err := r.db.ExecContext(ctx, query, id, userID)
+	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
@@ -179,7 +149,7 @@ func (r *postgresRepository) Delete(ctx context.Context, id, userID int64) error
 
 func (r *postgresRepository) ListSummaries(
 	ctx context.Context,
-	params ListPostParams,
+	params ListParams,
 ) ([]*PostSummary, error) {
 	query := query.New()
 	cursor := params.Pagination.Cursor
@@ -236,4 +206,24 @@ func (r *postgresRepository) ListSummaries(
 	}
 
 	return posts, nil
+}
+
+func scanPost(row *sql.Row) (*Post, error) {
+	var p Post
+
+	err := row.Scan(
+		&p.ID, &p.Title, &p.Body, &p.UserID, &p.CommunityID,
+		&p.Views, &p.Score, &p.CreatedAt, &p.Version,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errs.ErrNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	p.CreatedAt = p.CreatedAt.UTC()
+
+	return &p, nil
 }

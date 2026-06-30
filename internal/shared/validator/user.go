@@ -10,12 +10,12 @@ const (
 )
 
 func ValidateEmail(v *Validator, email string) {
-	v.Check(NotBlank(email), "email", "is required")
+	v.Check(NotBlank(email), "email", "must not be empty")
 	v.Check(Matches(email, EmailRX), "email", "must be a valid email address")
 }
 
 func ValidateUsername(v *Validator, username string) {
-	v.Check(NotBlank(username), "username", "is required")
+	v.Check(NotBlank(username), "username", "must not be empty")
 	v.Check(
 		MinLength(username, userNameMin),
 		"username",
@@ -29,7 +29,7 @@ func ValidateUsername(v *Validator, username string) {
 }
 
 func ValidatePassword(v *Validator, password string) {
-	v.Check(NotBlank(password), "password", "is required")
+	v.Check(NotBlank(password), "password", "must not be empty")
 	v.Check(
 		MinLength(password, passwordMin),
 		"password",
