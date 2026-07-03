@@ -25,7 +25,14 @@ func NewRepository(db database.DB) Repository {
 }
 
 type postgresRepository struct {
-	db database.DB
+	base database.DB
+}
+
+func (r *postgresRepository) db(ctx context.Context) database.DB {
+	if tx, ok := database.GetTx(ctx); ok {
+		return tx
+	}
+	return r.base
 }
 
 func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, error) {
@@ -38,7 +45,7 @@ func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, erro
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	row := r.db.QueryRowContext(ctx, query, id)
+	row := r.db(ctx).QueryRowContext(ctx, query, id)
 	return scanPost(row)
 }
 
@@ -61,7 +68,7 @@ func (r *postgresRepository) GetView(
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
+	err := r.db(ctx).QueryRowContext(ctx, query, id).Scan(
 		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Score, &p.Views, &p.Version,
 		&p.UserID, &p.Author.Username,
 		&p.CommunityID, &p.Community.Name,
@@ -90,7 +97,7 @@ func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, args...).Scan(&p.ID, &p.CreatedAt, &p.Version)
+	err := r.db(ctx).QueryRowContext(ctx, query, args...).Scan(&p.ID, &p.CreatedAt, &p.Version)
 	if err != nil {
 		return err
 	}
@@ -120,7 +127,7 @@ func (r *postgresRepository) Update(ctx context.Context, id int64, p UpdateParam
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	row := r.db.QueryRowContext(ctx, query, args...)
+	row := r.db(ctx).QueryRowContext(ctx, query, args...)
 	return scanPost(row)
 }
 
@@ -130,7 +137,7 @@ func (r *postgresRepository) Delete(ctx context.Context, id int64) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := r.db(ctx).ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
@@ -181,7 +188,7 @@ func (r *postgresRepository) ListSummaries(
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	rows, err := r.db.QueryContext(ctx, q, args...)
+	rows, err := r.db(ctx).QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

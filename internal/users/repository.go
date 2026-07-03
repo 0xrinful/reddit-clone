@@ -19,11 +19,18 @@ type Repository interface {
 }
 
 func NewRepository(db database.DB) Repository {
-	return &postgresRepository{db: db}
+	return &postgresRepository{db}
 }
 
 type postgresRepository struct {
-	db database.DB
+	base database.DB
+}
+
+func (r *postgresRepository) db(ctx context.Context) database.DB {
+	if tx, ok := database.GetTx(ctx); ok {
+		return tx
+	}
+	return r.base
 }
 
 func (r *postgresRepository) Create(ctx context.Context, u *User) error {
@@ -37,7 +44,7 @@ func (r *postgresRepository) Create(ctx context.Context, u *User) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, args...).
+	err := r.db(ctx).QueryRowContext(ctx, query, args...).
 		Scan(&u.ID, &u.CreatedAt, &u.Version, &u.Activated)
 	if err != nil {
 		var pqErr *pq.Error
@@ -67,7 +74,7 @@ func (r *postgresRepository) GetByEmail(ctx context.Context, email string) (*Use
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, email).Scan(
+	err := r.db(ctx).QueryRowContext(ctx, query, email).Scan(
 		&user.ID, &user.Username, &user.Email, &user.Password.hash,
 		&avatarUrl, &user.CreatedAt, &user.Version, &user.Activated,
 		&activatedAt,
@@ -102,6 +109,6 @@ func (r *postgresRepository) SetActivated(ctx context.Context, userID int64) err
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	_, err := r.db.ExecContext(ctx, query, userID)
+	_, err := r.db(ctx).ExecContext(ctx, query, userID)
 	return err
 }

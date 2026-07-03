@@ -16,6 +16,10 @@ type DB interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
+type TxBeginner interface {
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+}
+
 func Open(cfg config.DBConfig) (*sql.DB, error) {
 	db, err := sql.Open("postgres", cfg.DSN)
 	if err != nil {

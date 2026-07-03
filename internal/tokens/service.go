@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/0xrinful/reddit-clone/internal/config"
+	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
@@ -131,9 +132,9 @@ func (s *service) RotateRefreshToken(
 	}
 	defer tx.Rollback()
 
-	tokenRepo := NewRepository(tx)
+	ctxTx := database.WithTx(ctx, tx)
 
-	err = tokenRepo.DeleteByHash(ctx, hash)
+	err = s.tokenRepo.DeleteByHash(ctxTx, hash)
 	if err != nil {
 		return "", err
 	}
@@ -143,7 +144,7 @@ func (s *service) RotateRefreshToken(
 		return "", err
 	}
 
-	err = tokenRepo.Insert(ctx, newToken)
+	err = s.tokenRepo.Insert(ctxTx, newToken)
 	if err != nil {
 		return "", err
 	}

@@ -2,11 +2,11 @@ package auth
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"time"
 
+	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/shared/background"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/mailer"
@@ -22,7 +22,7 @@ type Service interface {
 }
 
 func NewService(
-	db *sql.DB,
+	txBeginner database.TxBeginner,
 	userRepo users.Repository,
 	tokenRepo tokens.Repository,
 	mailer *mailer.Mailer,
@@ -30,7 +30,7 @@ func NewService(
 	background *background.Worker,
 ) *service {
 	return &service{
-		db:         db,
+		txBeginner: txBeginner,
 		userRepo:   userRepo,
 		tokenRepo:  tokenRepo,
 		mailer:     mailer,
@@ -40,7 +40,7 @@ func NewService(
 }
 
 type service struct {
-	db         *sql.DB
+	txBeginner database.TxBeginner
 	userRepo   users.Repository
 	tokenRepo  tokens.Repository
 	mailer     *mailer.Mailer
@@ -65,16 +65,15 @@ func (s *service) RegisterUser(ctx context.Context, params CreateUserParams) (*u
 		return nil, err
 	}
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.txBeginner.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	userRepo := users.NewRepository(tx)
-	tokenRepo := tokens.NewRepository(tx)
+	ctxTx := database.WithTx(ctx, tx)
 
-	err = userRepo.Create(ctx, user)
+	err = s.userRepo.Create(ctxTx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +83,7 @@ func (s *service) RegisterUser(ctx context.Context, params CreateUserParams) (*u
 		return nil, err
 	}
 
-	if err = tokenRepo.Insert(ctx, token); err != nil {
+	if err = s.tokenRepo.Insert(ctxTx, token); err != nil {
 		return nil, err
 	}
 
@@ -123,16 +122,15 @@ func (s *service) ActivateUser(ctx context.Context, plaintext string) error {
 }
 
 func (s *service) SendActivationEmail(ctx context.Context, email string) error {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.txBeginner.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	userRepo := users.NewRepository(tx)
-	tokenRepo := tokens.NewRepository(tx)
+	ctxTx := database.WithTx(ctx, tx)
 
-	user, err := userRepo.GetByEmail(ctx, email)
+	user, err := s.userRepo.GetByEmail(ctxTx, email)
 	if err != nil {
 		return err
 	}
@@ -146,11 +144,11 @@ func (s *service) SendActivationEmail(ctx context.Context, email string) error {
 		return err
 	}
 
-	if err = tokenRepo.DeleteAllForUser(ctx, tokens.ScopeActivation, user.ID); err != nil {
+	if err = s.tokenRepo.DeleteAllForUser(ctxTx, tokens.ScopeActivation, user.ID); err != nil {
 		return err
 	}
 
-	if err = tokenRepo.Insert(ctx, token); err != nil {
+	if err = s.tokenRepo.Insert(ctxTx, token); err != nil {
 		return err
 	}
 

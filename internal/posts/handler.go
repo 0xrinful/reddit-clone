@@ -107,10 +107,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, _ := request.GetUser(r)
-	params := UpdateParams{
-		Title: input.Title,
-		Body:  input.Body,
-	}
+	params := UpdateParams(input)
 
 	post, err := h.service.Update(r.Context(), id, user.ID, params)
 	if err != nil {

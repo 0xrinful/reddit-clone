@@ -22,11 +22,18 @@ type Repository interface {
 }
 
 func NewRepository(db database.DB) Repository {
-	return &postgresRepository{db: db}
+	return &postgresRepository{db}
 }
 
 type postgresRepository struct {
-	db database.DB
+	base database.DB
+}
+
+func (r *postgresRepository) db(ctx context.Context) database.DB {
+	if tx, ok := database.GetTx(ctx); ok {
+		return tx
+	}
+	return r.base
 }
 
 func (r *postgresRepository) GetByName(ctx context.Context, name string) (*Community, error) {
@@ -38,7 +45,7 @@ func (r *postgresRepository) GetByName(ctx context.Context, name string) (*Commu
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	row := r.db.QueryRowContext(ctx, query, name)
+	row := r.db(ctx).QueryRowContext(ctx, query, name)
 
 	return scanCommunity(row)
 }
@@ -60,7 +67,7 @@ func (r *postgresRepository) GetViewByName(
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, name).Scan(
+	err := r.db(ctx).QueryRowContext(ctx, query, name).Scan(
 		&c.ID, &c.Name, &ownerID,
 		&c.Description, &c.CreatedAt, &c.Version, &username,
 	)
@@ -95,7 +102,7 @@ func (r *postgresRepository) Create(ctx context.Context, c *Community) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, args...).Scan(&c.ID, &c.CreatedAt, &c.Version)
+	err := r.db(ctx).QueryRowContext(ctx, query, args...).Scan(&c.ID, &c.CreatedAt, &c.Version)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
@@ -117,7 +124,7 @@ func (r *postgresRepository) Delete(ctx context.Context, id int64) error {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := r.db(ctx).ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}
@@ -159,7 +166,7 @@ func (r *postgresRepository) Update(
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	row := r.db.QueryRowContext(ctx, query, args...)
+	row := r.db(ctx).QueryRowContext(ctx, query, args...)
 	community, err := scanCommunity(row)
 	if err != nil {
 		var pqErr *pq.Error

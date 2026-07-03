@@ -22,7 +22,14 @@ func NewRepository(db database.DB) Repository {
 }
 
 type postgresRepository struct {
-	db database.DB
+	base database.DB
+}
+
+func (r *postgresRepository) db(ctx context.Context) database.DB {
+	if tx, ok := database.GetTx(ctx); ok {
+		return tx
+	}
+	return r.base
 }
 
 func (r *postgresRepository) Insert(ctx context.Context, token *Token) error {
@@ -35,7 +42,7 @@ func (r *postgresRepository) Insert(ctx context.Context, token *Token) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	_, err := r.db.ExecContext(ctx, query, args...)
+	_, err := r.db(ctx).ExecContext(ctx, query, args...)
 	return err
 }
 
@@ -49,7 +56,7 @@ func (r *postgresRepository) DeleteAllForUser(
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	_, err := r.db.ExecContext(ctx, query, userID, scope)
+	_, err := r.db(ctx).ExecContext(ctx, query, userID, scope)
 	return err
 }
 
@@ -67,7 +74,7 @@ func (r *postgresRepository) GetByHash(
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	err := r.db.QueryRowContext(ctx, query, hash, scope).
+	err := r.db(ctx).QueryRowContext(ctx, query, hash, scope).
 		Scan(&token.ID, &token.Hash, &token.UserID, &token.Expiry, &token.Scope)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errs.ErrInvalidToken
@@ -87,6 +94,6 @@ func (r *postgresRepository) DeleteByHash(ctx context.Context, hash []byte) erro
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
 
-	_, err := r.db.ExecContext(ctx, query, hash)
+	_, err := r.db(ctx).ExecContext(ctx, query, hash)
 	return err
 }
