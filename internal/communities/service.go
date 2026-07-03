@@ -3,6 +3,8 @@ package communities
 import (
 	"context"
 
+	"github.com/0xrinful/reddit-clone/internal/database"
+	"github.com/0xrinful/reddit-clone/internal/members"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
@@ -15,19 +17,29 @@ type Service interface {
 }
 
 type service struct {
-	repo Repository
+	txBeginner      database.TxBeginner
+	communitiesRepo Repository
+	membersRepo     members.Repository
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo}
+func NewService(
+	txBeginner database.TxBeginner,
+	communitiesRepo Repository,
+	membersRepo members.Repository,
+) Service {
+	return &service{
+		txBeginner:      txBeginner,
+		communitiesRepo: communitiesRepo,
+		membersRepo:     membersRepo,
+	}
 }
 
 func (s *service) GetByName(ctx context.Context, name string) (*Community, error) {
-	return s.repo.GetByName(ctx, name)
+	return s.communitiesRepo.GetByName(ctx, name)
 }
 
 func (s *service) GetViewByName(ctx context.Context, name string) (*CommunityView, error) {
-	return s.repo.GetViewByName(ctx, name)
+	return s.communitiesRepo.GetViewByName(ctx, name)
 }
 
 func (s *service) Create(ctx context.Context, p CreateParams) (*Community, error) {
@@ -37,7 +49,29 @@ func (s *service) Create(ctx context.Context, p CreateParams) (*Community, error
 		OwnerID:     &p.OwnerID,
 	}
 
-	if err := s.repo.Create(ctx, c); err != nil {
+	tx, err := s.txBeginner.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	ctxTx := database.WithTx(ctx, tx)
+
+	if err := s.communitiesRepo.Create(ctxTx, c); err != nil {
+		return nil, err
+	}
+
+	m := &members.Membership{
+		CommunityID: c.ID,
+		UserID:      p.OwnerID,
+		Role:        members.RoleOwner,
+	}
+
+	if err := s.membersRepo.Create(ctxTx, m); err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +88,7 @@ func (s *service) Delete(ctx context.Context, name string, requesterID int64) er
 		return errs.ErrForbidden
 	}
 
-	return s.repo.Delete(ctx, community.ID)
+	return s.communitiesRepo.Delete(ctx, community.ID)
 }
 
 func (s *service) Update(
@@ -63,7 +97,7 @@ func (s *service) Update(
 	requesterID int64,
 	p UpdateParams,
 ) (*Community, error) {
-	community, err := s.repo.GetByName(ctx, name)
+	community, err := s.communitiesRepo.GetByName(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -73,5 +107,5 @@ func (s *service) Update(
 		return nil, errs.ErrForbidden
 	}
 
-	return s.repo.Update(ctx, community.ID, p)
+	return s.communitiesRepo.Update(ctx, community.ID, p)
 }

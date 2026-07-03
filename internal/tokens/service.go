@@ -2,7 +2,6 @@ package tokens
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
@@ -22,9 +21,13 @@ type Service interface {
 	RevokeRefreshToken(ctx context.Context, plain string) error
 }
 
-func NewService(tokenRepo Repository, db *sql.DB, cfg config.JWTConfig) Service {
+func NewService(
+	txBeginner database.TxBeginner,
+	tokenRepo Repository,
+	cfg config.JWTConfig,
+) Service {
 	return &service{
-		db:         db,
+		txBeginner: txBeginner,
 		tokenRepo:  tokenRepo,
 		secret:     []byte(cfg.Secret),
 		refreshTTL: cfg.RefreshTokenTTL,
@@ -33,7 +36,7 @@ func NewService(tokenRepo Repository, db *sql.DB, cfg config.JWTConfig) Service 
 }
 
 type service struct {
-	db         *sql.DB
+	txBeginner database.TxBeginner
 	tokenRepo  Repository
 	secret     []byte
 	refreshTTL time.Duration
@@ -126,7 +129,7 @@ func (s *service) RotateRefreshToken(
 ) (string, error) {
 	hash := Hash(plain)
 
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.txBeginner.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
 	}

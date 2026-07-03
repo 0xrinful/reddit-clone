@@ -64,7 +64,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrDuplicateCommunityName):
-			v.AddError("name", "community name is already in use")
+			v.AddError("name", "community already exists")
 			h.responder.ValidationError(w, v.Errors)
 		default:
 			h.responder.ServerError(w, err)

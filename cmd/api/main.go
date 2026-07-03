@@ -16,6 +16,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
 	"github.com/0xrinful/reddit-clone/internal/database"
+	"github.com/0xrinful/reddit-clone/internal/members"
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/server"
 	"github.com/0xrinful/reddit-clone/internal/shared/background"
@@ -48,12 +49,13 @@ func main() {
 	postsRepo := posts.NewRepository(db)
 	usersRepo := users.NewRepository(db)
 	tokensRepo := tokens.NewRepository(db)
+	membersRepo := members.NewRepository(db)
 
-	communitiesSvc := communities.NewService(communitiesRepo)
+	communitiesSvc := communities.NewService(db, communitiesRepo, membersRepo)
 	postsSvc := posts.NewService(postsRepo)
 	usersSvc := users.NewService(usersRepo)
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)
-	tokensSvc := tokens.NewService(tokensRepo, db, cfg.JWT)
+	tokensSvc := tokens.NewService(db, tokensRepo, cfg.JWT)
 
 	srv := server.New(cfg, logger, bg, communitiesSvc, postsSvc, usersSvc, authSvc, tokensSvc)
 
