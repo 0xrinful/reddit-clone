@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS communities (
   version INTEGER NOT NULL DEFAULT 1
 );
 
-CREATE INDEX IF NOT EXISTS idx_communities_name ON communities (name);
+CREATE INDEX IF NOT EXISTS idx_communities_name_trgm ON communities USING gin (name gin_trgm_ops);
