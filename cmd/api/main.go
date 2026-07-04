@@ -56,8 +56,14 @@ func main() {
 	usersSvc := users.NewService(usersRepo)
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)
 	tokensSvc := tokens.NewService(db, tokensRepo, cfg.JWT)
+	membersSvc := members.NewService(membersRepo)
 
-	srv := server.New(cfg, logger, bg, communitiesSvc, postsSvc, usersSvc, authSvc, tokensSvc)
+	srv := server.New(
+		cfg, logger, bg,
+		communitiesSvc,
+		postsSvc, usersSvc, authSvc,
+		tokensSvc, membersSvc,
+	)
 
 	// graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

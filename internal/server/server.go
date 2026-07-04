@@ -10,6 +10,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/auth"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
+	"github.com/0xrinful/reddit-clone/internal/members"
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/shared/background"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
@@ -32,6 +33,7 @@ type Server struct {
 	communities *communities.Handler
 	users       *users.Handler
 	auth        *auth.Handler
+	members     *members.Handler
 }
 
 func New(
@@ -43,6 +45,7 @@ func New(
 	usersSvc users.Service,
 	authSvc auth.Service,
 	tokensSvc tokens.Service,
+	membersSvc members.Service,
 ) *Server {
 	responder := response.NewResponder(logger)
 
@@ -50,6 +53,7 @@ func New(
 	communitiesHandler := communities.NewHandler(communitiesSvc, responder)
 	usersHandler := users.NewHandler(usersSvc, responder)
 	authHandler := auth.NewHandler(authSvc, tokensSvc, responder)
+	membersHandler := members.NewHandler(membersSvc, responder)
 
 	server := &Server{
 		cfg:    cfg,
@@ -63,6 +67,7 @@ func New(
 		communities: communitiesHandler,
 		users:       usersHandler,
 		auth:        authHandler,
+		members:     membersHandler,
 	}
 
 	router := server.setupRoutes(responder)

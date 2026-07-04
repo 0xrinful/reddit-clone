@@ -17,9 +17,11 @@
 │       ├── PATCH                    → update community (mod only) ✅
 │       ├── DELETE                   → delete / archive community (owner) ✅
 │       │
-│       ├── membership/
-│       │   ├── PUT                  → join community (+ auth)
-│       │   └── DELETE               → leave community (+ auth)
+│       ├── members/
+│       ├── GET                          → list members
+│       ├── me/
+│       │   ├── PUT                      → join (self) ✅
+│       │   └── DELETE                   → leave (self) ✅
 │       │
 │       ├── posts/
 │       │   ├── GET                  → list posts in this community ✅

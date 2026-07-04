@@ -56,6 +56,14 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 				r.Use(m.LoadCommunity(s.communitiesSvc))
 				r.With(m.ReadLimit()).Get("/posts", s.posts.List)
 				r.With(m.WriteLimit(), m.RequireAuth).Post("/posts", s.posts.Create)
+
+				r.Route("/members", func(r *rush.Router) {
+					r.Route("/me", func(r *rush.Router) {
+						r.Use(m.WriteLimit(), m.RequireAuth)
+						r.Put("/", s.members.Join)
+						r.Delete("/", s.members.Leave)
+					})
+				})
 			})
 		})
 
