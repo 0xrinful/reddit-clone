@@ -155,7 +155,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	community := request.GetCommunity(r)
 
 	v := validator.New()
-	pageParams := request.ParsePagination(r, v)
+	pageParams := request.ParsePagination(r, v, pagination.DecodePostCursor)
 
 	sort := SortBy(request.ReadString(r.URL.Query(), "sort", "new"))
 	v.Check(sort.IsValid(), "sort", "invalid sort value")
@@ -184,7 +184,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	if len(posts) > limit {
 		page := posts[:limit] // trim extra row used for next page check
 		last := page[len(page)-1]
-		next := &pagination.Cursor{ID: last.ID}
+		next := &pagination.PostCursor{ID: last.ID}
 
 		switch sort {
 		case SortByNew:

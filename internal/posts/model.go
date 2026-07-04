@@ -73,6 +73,6 @@ func (s SortBy) IsValid() bool {
 
 type ListParams struct {
 	Sort        SortBy
-	Pagination  pagination.Params
+	Pagination  pagination.Params[pagination.PostCursor]
 	CommunityID int64
 }

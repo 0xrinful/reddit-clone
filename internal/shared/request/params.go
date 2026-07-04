@@ -25,11 +25,14 @@ func ReadString(qs url.Values, key string, defaultValue string) string {
 	return s
 }
 
-func ParsePagination(r *http.Request, v *validator.Validator) pagination.Params {
-	params := pagination.Params{Limit: pagination.DefaultLimit}
-
+func ParsePagination[T any](
+	r *http.Request,
+	v *validator.Validator,
+	decodeFunc func(string) (*T, error),
+) pagination.Params[T] {
+	params := pagination.Params[T]{Limit: pagination.DefaultLimit}
 	if s := r.URL.Query().Get("cursor"); s != "" {
-		cursor, err := pagination.Decode(s)
+		cursor, err := decodeFunc(s)
 		if err != nil {
 			v.AddError("cursor", "invalid cursor value")
 		} else {
