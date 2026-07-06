@@ -25,18 +25,52 @@ func ReadString(qs url.Values, key string, defaultValue string) string {
 	return s
 }
 
-func ParsePagination[T any](
+func ParseCursorPagination[T any](
 	r *http.Request,
 	v *validator.Validator,
 	decodeFunc func(string) (*T, error),
-) pagination.Params[T] {
-	params := pagination.Params[T]{Limit: pagination.DefaultLimit}
+) pagination.CursorParams[T] {
+	params := pagination.CursorParams[T]{Limit: pagination.DefaultLimit}
 	if s := r.URL.Query().Get("cursor"); s != "" {
 		cursor, err := decodeFunc(s)
 		if err != nil {
 			v.AddError("cursor", "invalid cursor value")
 		} else {
 			params.Cursor = cursor
+		}
+	}
+
+	if s := r.URL.Query().Get("limit"); s != "" {
+		if limit, err := strconv.Atoi(s); err == nil {
+			if limit > pagination.MaxLimit {
+				limit = pagination.MaxLimit
+			}
+			if limit < 1 {
+				v.AddError("limit", "must be greater than zero")
+			} else {
+				params.Limit = limit
+			}
+		} else {
+			v.AddError("limit", "must be an integer value")
+		}
+	}
+	return params
+}
+
+func ParseOffsetPagination(
+	r *http.Request,
+	v *validator.Validator,
+) pagination.OffsetParams {
+	params := pagination.OffsetParams{Limit: pagination.DefaultLimit, Page: 1}
+	if s := r.URL.Query().Get("page"); s != "" {
+		if page, err := strconv.Atoi(s); err == nil {
+			v.Check(page > 0, "page", "must be greater than zero")
+			v.Check(page <= 10_000_000, "page", "must be a maximum of 10 million")
+			if v.Valid() {
+				params.Page = page
+			}
+		} else {
+			v.AddError("limit", "must be an integer value")
 		}
 	}
 

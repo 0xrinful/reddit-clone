@@ -11,7 +11,16 @@ const (
 
 var ErrInvalidCursor = errors.New("invalid cursor")
 
-type Params[T any] struct {
+type CursorParams[T any] struct {
 	Limit  int
 	Cursor *T
+}
+
+type OffsetParams struct {
+	Limit int
+	Page  int
+}
+
+func (p OffsetParams) Offset() int {
+	return (p.Page - 1) * p.Limit
 }
