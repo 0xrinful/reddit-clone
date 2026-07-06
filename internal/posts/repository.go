@@ -17,7 +17,7 @@ type Repository interface {
 	Create(ctx context.Context, p *Post) error
 	Update(ctx context.Context, id int64, p UpdateParams) (*Post, error)
 	Delete(ctx context.Context, id int64) error
-	ListSummaries(ctx context.Context, params ListParams) ([]*PostSummary, error)
+	List(ctx context.Context, params ListParams) ([]*PostSummary, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -38,7 +38,7 @@ func (r *postgresRepository) db(ctx context.Context) database.DB {
 func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, error) {
 	query := `
 		SELECT 
-			p.id, p.title, p.body, p.user_id, p.community_id, p.views, p.score, p.created_at, p.version
+			p.id, p.title, p.body, p.user_id, p.community_id, p.views, p.score, p.created_at 
 		FROM posts p 
 		WHERE p.id = $1`
 
@@ -55,7 +55,7 @@ func (r *postgresRepository) GetView(
 ) (*PostView, error) {
 	query := `
 		SELECT 
-			p.id, p.title, p.body, p.created_at, p.score, p.views, p.version,
+			p.id, p.title, p.body, p.created_at, p.score, p.views,
 			p.user_id, u.username as author,
 			p.community_id, c.name 
 		FROM posts p 
@@ -69,7 +69,7 @@ func (r *postgresRepository) GetView(
 	defer cancel()
 
 	err := r.db(ctx).QueryRowContext(ctx, query, id).Scan(
-		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Score, &p.Views, &p.Version,
+		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Score, &p.Views,
 		&p.UserID, &p.Author.Username,
 		&p.CommunityID, &p.Community.Name,
 	)
@@ -90,14 +90,14 @@ func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
 	query := `
 		INSERT INTO posts (title, body, user_id, community_id)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at, version`
+		RETURNING id, created_at`
 
 	args := []any{p.Title, p.Body, p.UserID, p.CommunityID}
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db(ctx).QueryRowContext(ctx, query, args...).Scan(&p.ID, &p.CreatedAt, &p.Version)
+	err := r.db(ctx).QueryRowContext(ctx, query, args...).Scan(&p.ID, &p.CreatedAt)
 	if err != nil {
 		return err
 	}
@@ -117,8 +117,6 @@ func (r *postgresRepository) Update(ctx context.Context, id int64, p UpdateParam
 	if p.Body != nil {
 		q.Set("body = ?", *p.Body)
 	}
-
-	q.Set("version = version + 1")
 
 	q.Where("id = ?", id)
 	q.Returning("*")
@@ -154,7 +152,7 @@ func (r *postgresRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (r *postgresRepository) ListSummaries(
+func (r *postgresRepository) List(
 	ctx context.Context,
 	params ListParams,
 ) ([]*PostSummary, error) {
@@ -220,7 +218,7 @@ func scanPost(row *sql.Row) (*Post, error) {
 
 	err := row.Scan(
 		&p.ID, &p.Title, &p.Body, &p.UserID, &p.CommunityID,
-		&p.Views, &p.Score, &p.CreatedAt, &p.Version,
+		&p.Views, &p.Score, &p.CreatedAt,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {

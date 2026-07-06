@@ -6,8 +6,12 @@ import (
 	"unicode/utf8"
 )
 
-var EmailRX = regexp.MustCompile(
-	"^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
+var (
+	EmailRX = regexp.MustCompile(
+		"^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
+	)
+	UsernameRX      = regexp.MustCompile("^[a-zA-Z0-9][a-zA-Z0-9_]{2,31}$")
+	CommunityNameRX = regexp.MustCompile("^[a-zA-Z0-9][a-zA-Z0-9_]{2,31}$")
 )
 
 type Validator struct {

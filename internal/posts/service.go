@@ -78,5 +78,5 @@ func (s *service) List(
 	ctx context.Context,
 	params ListParams,
 ) ([]*PostSummary, error) {
-	return s.repo.ListSummaries(ctx, params)
+	return s.repo.List(ctx, params)
 }

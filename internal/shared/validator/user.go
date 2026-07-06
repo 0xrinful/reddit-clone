@@ -3,8 +3,8 @@ package validator
 import "fmt"
 
 const (
-	userNameMin = 3
-	userNameMax = 32
+	usernameMin = 3
+	usernameMax = 32
 	passwordMin = 8
 	passwordMax = 72
 )
@@ -15,16 +15,20 @@ func ValidateEmail(v *Validator, email string) {
 }
 
 func ValidateUsername(v *Validator, username string) {
-	v.Check(NotBlank(username), "username", "must not be empty")
 	v.Check(
-		MinLength(username, userNameMin),
+		MinLength(username, usernameMin),
 		"username",
-		fmt.Sprintf("must be at least %d characters", userNameMin),
+		fmt.Sprintf("must be at least %d characters", usernameMin),
 	)
 	v.Check(
-		MaxLength(username, userNameMax),
+		MaxLength(username, usernameMax),
 		"username",
-		fmt.Sprintf("must not exceed %d characters", userNameMax),
+		fmt.Sprintf("must not exceed %d characters", usernameMax),
+	)
+	v.Check(
+		Matches(username, UsernameRX),
+		"username",
+		"must contain only letters, numbers, and underscores, and must start with a letter or number",
 	)
 }
 

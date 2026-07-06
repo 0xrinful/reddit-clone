@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS posts (
   views BIGINT NOT NULL DEFAULT 0,
   score BIGINT NOT NULL DEFAULT 0,
   created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  version INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE INDEX IF NOT EXISTS idx_posts_community_id ON posts (community_id);

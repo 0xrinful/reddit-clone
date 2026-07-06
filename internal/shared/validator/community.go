@@ -9,7 +9,6 @@ const (
 )
 
 func ValidateCommunityName(v *Validator, name string) {
-	v.Check(NotBlank(name), "name", "must not be empty")
 	v.Check(
 		MinLength(name, communityNameMin),
 		"name",
@@ -19,6 +18,11 @@ func ValidateCommunityName(v *Validator, name string) {
 		MaxLength(name, communityNameMax),
 		"name",
 		fmt.Sprintf("must not exceed %d characters", communityNameMax),
+	)
+	v.Check(
+		Matches(name, CommunityNameRX),
+		"name",
+		"must contain only letters, numbers, and underscores, and must start with a letter or number",
 	)
 }
 

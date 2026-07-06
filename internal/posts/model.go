@@ -15,7 +15,6 @@ type Post struct {
 	Views       int64
 	Score       int64
 	CreatedAt   time.Time
-	Version     int32
 }
 
 type PostAuthor struct {
@@ -73,6 +72,6 @@ func (s SortBy) IsValid() bool {
 
 type ListParams struct {
 	Sort        SortBy
-	Pagination  pagination.Params[pagination.PostCursor]
+	Pagination  pagination.CursorParams[pagination.PostCursor]
 	CommunityID int64
 }

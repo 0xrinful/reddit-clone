@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS comments (
   user_id BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   parent_id BIGINT REFERENCES comments (id) ON DELETE CASCADE,
   created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
-  version INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments (post_id);

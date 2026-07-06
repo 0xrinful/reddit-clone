@@ -37,7 +37,7 @@ func (r *postgresRepository) Create(ctx context.Context, u *User) error {
 	query := `
 		INSERT INTO users (username, email, hashed_password) 
 		VALUES ($1, $2, $3)
-		RETURNING id, created_at, version, activated`
+		RETURNING id, created_at, activated`
 
 	args := []any{u.Username, u.Email, u.Password.hash}
 
@@ -45,7 +45,7 @@ func (r *postgresRepository) Create(ctx context.Context, u *User) error {
 	defer cancel()
 
 	err := r.db(ctx).QueryRowContext(ctx, query, args...).
-		Scan(&u.ID, &u.CreatedAt, &u.Version, &u.Activated)
+		Scan(&u.ID, &u.CreatedAt, &u.Activated)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
@@ -64,7 +64,7 @@ func (r *postgresRepository) Create(ctx context.Context, u *User) error {
 func (r *postgresRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
 		SELECT id, username, email, hashed_password, avatar_url, 
-		created_at, version, activated, activated_at
+		created_at, activated, activated_at
 		FROM users WHERE email = $1`
 
 	var user User
@@ -76,7 +76,7 @@ func (r *postgresRepository) GetByEmail(ctx context.Context, email string) (*Use
 
 	err := r.db(ctx).QueryRowContext(ctx, query, email).Scan(
 		&user.ID, &user.Username, &user.Email, &user.Password.hash,
-		&avatarUrl, &user.CreatedAt, &user.Version, &user.Activated,
+		&avatarUrl, &user.CreatedAt, &user.Activated,
 		&activatedAt,
 	)
 

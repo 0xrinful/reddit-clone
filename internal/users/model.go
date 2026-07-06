@@ -13,7 +13,6 @@ type User struct {
 	Password    Password
 	AvatarUrl   *string
 	CreatedAt   time.Time
-	Version     int32
 	Activated   bool
 	ActivatedAt *time.Time
 }
