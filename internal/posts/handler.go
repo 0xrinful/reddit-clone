@@ -155,7 +155,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	community := request.GetCommunity(r)
 
 	v := validator.New()
-	pageParams := request.ParsePagination(r, v, pagination.DecodePostCursor)
+	pageParams := request.ParseCursorPagination(r, v, pagination.DecodePostCursor)
 
 	sort := SortBy(request.ReadString(r.URL.Query(), "sort", "new"))
 	v.Check(sort.IsValid(), "sort", "invalid sort value")

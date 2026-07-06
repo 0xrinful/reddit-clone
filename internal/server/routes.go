@@ -40,10 +40,16 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 			})
 		})
 
+		// ─── SEARCH ──────────────────────────────────────────────────
+		r.Route("/search", func(r *rush.Router) {
+			r.Use(m.ReadLimit())
+			r.Get("/communities", s.communities.Search)
+		})
+
 		// ─── COMMUNITIES ──────────────────────────────────────────────────
 		r.Route("/communities", func(r *rush.Router) {
-			r.Get("/", nil)
-			r.Post("/", s.communities.Create)
+			r.With(m.ReadLimit()).Get("/", nil)
+			r.With(m.WriteLimit(), m.RequireAuth).Post("/", s.communities.Create)
 
 			r.Route("/{community_name}", func(r *rush.Router) {
 				r.With(m.ReadLimit()).Get("/", s.communities.Get)

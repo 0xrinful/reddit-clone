@@ -135,3 +135,28 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	view := communityToView(community)
 	h.responder.JSON(w, http.StatusOK, toCommunityResponse(view))
 }
+
+func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
+	q := request.ReadString(r.URL.Query(), "q", "")
+
+	v := validator.New()
+	pageParams := request.ParseOffsetPagination(r, v)
+
+	if !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	params := SearchParams{
+		Name:       q,
+		Pagination: pageParams,
+	}
+
+	communities, err := h.service.Search(r.Context(), params)
+	if err != nil {
+		h.responder.ServerError(w, err)
+		return
+	}
+
+	h.responder.JSON(w, http.StatusOK, toSearchCommunitiesResponse(communities))
+}

@@ -14,6 +14,7 @@ type Service interface {
 	Create(ctx context.Context, p CreateParams) (*Community, error)
 	Delete(ctx context.Context, name string, requesterID int64) error
 	Update(ctx context.Context, name string, requesterID int64, p UpdateParams) (*Community, error)
+	Search(ctx context.Context, p SearchParams) ([]*CommunitySummary, error)
 }
 
 type service struct {
@@ -108,4 +109,8 @@ func (s *service) Update(
 	}
 
 	return s.communitiesRepo.Update(ctx, community.ID, p)
+}
+
+func (s *service) Search(ctx context.Context, p SearchParams) ([]*CommunitySummary, error) {
+	return s.communitiesRepo.Search(ctx, p)
 }

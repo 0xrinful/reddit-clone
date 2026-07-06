@@ -19,6 +19,7 @@ type Repository interface {
 	Create(ctx context.Context, c *Community) error
 	Delete(ctx context.Context, id int64) error
 	Update(ctx context.Context, id int64, p UpdateParams) (*Community, error)
+	Search(ctx context.Context, p SearchParams) ([]*CommunitySummary, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -38,7 +39,7 @@ func (r *postgresRepository) db(ctx context.Context) database.DB {
 
 func (r *postgresRepository) GetByName(ctx context.Context, name string) (*Community, error) {
 	query := `
-		SELECT id, name, owner_id, description, created_at, version
+		SELECT id, name, owner_id, description, created_at
 		FROM communities 
 		WHERE name = $1`
 
@@ -55,7 +56,7 @@ func (r *postgresRepository) GetViewByName(
 	name string,
 ) (*CommunityView, error) {
 	query := `
-		SELECT c.id, c.name, c.owner_id, c.description, c.created_at, c.version, u.username
+		SELECT c.id, c.name, c.owner_id, c.description, c.created_at, u.username
 		FROM communities c 
 		LEFT JOIN users u ON u.id = c.owner_id
 		WHERE c.name = $1`
@@ -69,7 +70,7 @@ func (r *postgresRepository) GetViewByName(
 
 	err := r.db(ctx).QueryRowContext(ctx, query, name).Scan(
 		&c.ID, &c.Name, &ownerID,
-		&c.Description, &c.CreatedAt, &c.Version, &username,
+		&c.Description, &c.CreatedAt, &username,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -95,14 +96,14 @@ func (r *postgresRepository) Create(ctx context.Context, c *Community) error {
 	query := `
 		INSERT INTO communities (name, owner_id, description)
 		VALUES ($1, $2, $3)
-		RETURNING id, created_at, version`
+		RETURNING id, created_at`
 
 	args := []any{c.Name, c.OwnerID, c.Description}
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db(ctx).QueryRowContext(ctx, query, args...).Scan(&c.ID, &c.CreatedAt, &c.Version)
+	err := r.db(ctx).QueryRowContext(ctx, query, args...).Scan(&c.ID, &c.CreatedAt)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
@@ -157,8 +158,6 @@ func (r *postgresRepository) Update(
 		q.Set("description = ?", *p.Description)
 	}
 
-	q.Set("version = version + 1")
-
 	q.Where("id = ?", id)
 	q.Returning("*")
 	query, args := q.ToSql()
@@ -182,13 +181,61 @@ func (r *postgresRepository) Update(
 	return community, nil
 }
 
+func (r *postgresRepository) Search(
+	ctx context.Context,
+	p SearchParams,
+) ([]*CommunitySummary, error) {
+	query := `
+		SELECT id, name, description, created_at 
+		FROM communities
+		WHERE
+				name LIKE $1 || '%'
+				OR name % $1
+		ORDER BY
+				CASE
+						WHEN name LIKE $1 || '%' THEN 0
+						ELSE 1
+				END,
+				similarity(name, $1) DESC,
+				name
+		LIMIT $2 OFFSET $3`
+
+	args := []any{p.Name, p.Pagination.Limit, p.Pagination.Offset()}
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	rows, err := r.db(ctx).QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	communities := make([]*CommunitySummary, 0, p.Pagination.Limit)
+	for rows.Next() {
+		var c CommunitySummary
+		err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		c.CreatedAt = c.CreatedAt.UTC()
+		communities = append(communities, &c)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return communities, nil
+}
+
 func scanCommunity(row *sql.Row) (*Community, error) {
 	var c Community
 	var ownerID sql.NullInt64
 
 	err := row.Scan(
 		&c.ID, &c.Name, &ownerID,
-		&c.Description, &c.CreatedAt, &c.Version,
+		&c.Description, &c.CreatedAt,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {

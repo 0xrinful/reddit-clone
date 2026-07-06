@@ -1,6 +1,10 @@
 package communities
 
-import "time"
+import (
+	"time"
+
+	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
+)
 
 type Community struct {
 	ID          int64
@@ -8,7 +12,6 @@ type Community struct {
 	OwnerID     *int64
 	Description string
 	CreatedAt   time.Time
-	Version     int32
 }
 
 type CommunityOwner struct {
@@ -20,6 +23,13 @@ type CommunityView struct {
 	Owner *CommunityOwner
 }
 
+type CommunitySummary struct {
+	ID          int64
+	Name        string
+	Description string
+	CreatedAt   time.Time
+}
+
 type CreateParams struct {
 	Name        string
 	OwnerID     int64
@@ -29,4 +39,11 @@ type CreateParams struct {
 type UpdateParams struct {
 	Name        *string
 	Description *string
+}
+
+type ListParams struct{}
+
+type SearchParams struct {
+	Name       string
+	Pagination pagination.OffsetParams
 }

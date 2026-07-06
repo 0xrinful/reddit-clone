@@ -49,6 +49,13 @@ type CommunityDTO struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type CommunitySummaryDTO struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 // mapping helpers
 func communityToView(c *Community) *CommunityView {
 	return &CommunityView{
@@ -74,9 +81,22 @@ func toCommunityDTO(c *CommunityView) CommunityDTO {
 	return dto
 }
 
+func toCommunitySummaryDTO(c *CommunitySummary) CommunitySummaryDTO {
+	return CommunitySummaryDTO{
+		ID:          c.ID,
+		Name:        c.Name,
+		Description: c.Description,
+		CreatedAt:   c.CreatedAt,
+	}
+}
+
 // response envelope
 type CommunityResponse struct {
 	Community CommunityDTO `json:"community"`
+}
+
+type SearchCommunitiesResponse struct {
+	Communities []CommunitySummaryDTO `json:"communities"`
 }
 
 // response constructor
@@ -84,4 +104,12 @@ func toCommunityResponse(c *CommunityView) CommunityResponse {
 	return CommunityResponse{
 		Community: toCommunityDTO(c),
 	}
+}
+
+func toSearchCommunitiesResponse(c []*CommunitySummary) SearchCommunitiesResponse {
+	communities := make([]CommunitySummaryDTO, len(c))
+	for i := range c {
+		communities[i] = toCommunitySummaryDTO(c[i])
+	}
+	return SearchCommunitiesResponse{Communities: communities}
 }
