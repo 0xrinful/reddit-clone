@@ -1,76 +1,83 @@
 /api/v1/
-│
+
 ├── auth/
-│   ├── POST   register ✅
-│   ├── POST   login ✅
-│   ├── POST   logout ✅
-│   ├── POST   refresh ✅
+│   ├── POST   /register ✅
+│   ├── POST   /login ✅
+│   ├── POST   /logout ✅
+│   ├── POST   /refresh ✅
 │   └── email/
-│       ├── POST   verify ✅
-│       └── POST   verify/resend ✅
+│       ├── POST   /verify ✅
+│       └── POST   /verify/resend ✅
+│
+├── search/
+│   └── communities/
+│       └── GET                      → search communities ✅
 │
 ├── communities/
-│   ├── GET                          → list / search communities
+│   ├── GET                          → browse/list communities
 │   ├── POST                         → create community (+ auth) ✅
+│   │
 │   └── {community_name}/
-│       ├── GET                      → get community details ✅
-│       ├── PATCH                    → update community (mod only) ✅
-│       ├── DELETE                   → delete / archive community (owner) ✅
+│       ├── GET                      → community details ✅
+│       ├── PATCH                    → update community (owner/mod) ✅
+│       ├── DELETE                   → delete/archive community (owner) ✅
 │       │
 │       ├── members/
-│       ├── GET                          → list members
-│       ├── me/
-│       │   ├── PUT                      → join (self) ✅
-│       │   └── DELETE                   → leave (self) ✅
+│       │   ├── GET                  → list members
+│       │   └── me/
+│       │       ├── PUT              → join community ✅
+│       │       └── DELETE           → leave community ✅
 │       │
-│       ├── posts/
-│       │   ├── GET                  → list posts in this community ✅
-│       │   └── POST                 → create post in this community (+ auth) ✅
+│       ├── moderators/
+│       │   ├── GET                  → list moderators
+│       │   ├── POST                 → add moderator (owner)
+│       │   └── {username}/
+│       │       └── DELETE           → remove moderator (owner)
 │       │
-│       └── moderators/
-│           ├── GET                  → list moderators
-│           ├── POST                 → add moderator (owner only)
-│           └── {username}/
-│               └── DELETE           → remove moderator (owner only)
+│       └── posts/
+│           ├── GET                  → list posts ✅
+│           └── POST                 → create post (+ auth) ✅
 │
 ├── posts/
 │   └── {post_id}/
-│       ├── GET                      → get post (includes community info in body) ✅
-│       ├── PATCH                    → update post (author only, + auth) ✅
-│       ├── DELETE                   → delete post (author / mod, + auth) ✅
+│       ├── GET                      → post details ✅
+│       ├── PATCH                    → update post (+ auth) ✅
+│       ├── DELETE                   → delete post (+ auth) ✅
 │       │
 │       ├── votes/
-│       │   ├── PUT                  → cast or change vote (+ auth)  body: { direction: "up"|"down" }
+│       │   ├── PUT                  → create/update vote (+ auth)
 │       │   └── DELETE               → remove vote (+ auth)
 │       │
 │       └── comments/
-│           ├── GET                  → list top-level comments (paginated)
-│           └── POST                 → create comment on post (+ auth)
+│           ├── GET                  → list top-level comments
+│           └── POST                 → create comment (+ auth)
 │
 ├── comments/
 │   └── {comment_id}/
-│       ├── GET                      → get single comment + thread context
-│       ├── PATCH                    → update comment (author only, + auth)
-│       ├── DELETE                   → delete comment (author / mod, + auth)
+│       ├── GET                      → comment details
+│       ├── PATCH                    → update comment (+ auth)
+│       ├── DELETE                   → delete comment (+ auth)
 │       │
 │       ├── votes/
-│       │   ├── PUT                  → cast or change vote (+ auth)
+│       │   ├── PUT                  → create/update vote (+ auth)
 │       │   └── DELETE               → remove vote (+ auth)
 │       │
 │       └── replies/
 │           ├── GET                  → list direct replies
-│           └── POST                 → reply to comment (+ auth)
+│           └── POST                 → create reply (+ auth)
 │
 ├── users/
 │   └── {username}/
 │       ├── GET                      → public profile
 │       ├── posts/
-│       │   └── GET                  → posts by this user (paginated)
+│       │   └── GET                  → user's posts
 │       ├── comments/
-│       │   └── GET                  → comments by this user (paginated)
+│       │   └── GET                  → user's comments
 │       └── communities/
-│           └── GET                  → communities this user is a member of
+│           └── GET                  → communities the user belongs to
 │
 └── feed/
-    ├── GET   popular                → trending posts (no auth required)
-    └── GET   home                   → personalized feed (+ auth)
+    ├── popular/
+    │   └── GET                      → trending posts
+    └── home/
+        └── GET                      → personalized feed (+ auth)
