@@ -1,6 +1,8 @@
 package pagination
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 )
 
@@ -23,4 +25,30 @@ type OffsetParams struct {
 
 func (p OffsetParams) Offset() int {
 	return (p.Page - 1) * p.Limit
+}
+
+func EncodeCursor[T any](c *T) string {
+	b, err := json.Marshal(c)
+	if err != nil {
+		panic("pagination: invalid cursor")
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+func DecodeCursor[T any](s string) (*T, error) {
+	if s == "" {
+		return nil, nil
+	}
+
+	b, err := base64.RawURLEncoding.DecodeString(s)
+	if err != nil {
+		return nil, ErrInvalidCursor
+	}
+
+	var c T
+	if err = json.Unmarshal(b, &c); err != nil {
+		return nil, ErrInvalidCursor
+	}
+
+	return &c, nil
 }
