@@ -14,7 +14,7 @@
 │       └── GET                      → search communities ✅
 │
 ├── communities/
-│   ├── GET                          → browse/list communities
+│   ├── GET                          → browse/list communities ✅
 │   ├── POST                         → create community (+ auth) ✅
 │   │
 │   └── {community_name}/

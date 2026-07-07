@@ -41,7 +41,9 @@ type UpdateParams struct {
 	Description *string
 }
 
-type ListParams struct{}
+type ListParams struct {
+	Pagination pagination.CursorParams[pagination.CommunityCursor]
+}
 
 type SearchParams struct {
 	Name       string

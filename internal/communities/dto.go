@@ -99,6 +99,11 @@ type SearchCommunitiesResponse struct {
 	Communities []CommunitySummaryDTO `json:"communities"`
 }
 
+type ListCommunitiesResponse struct {
+	Communities []CommunitySummaryDTO `json:"communities"`
+	NextCursor  string                `json:"next_cursor,omitempty"`
+}
+
 // response constructor
 func toCommunityResponse(c *CommunityView) CommunityResponse {
 	return CommunityResponse{
@@ -112,4 +117,12 @@ func toSearchCommunitiesResponse(c []*CommunitySummary) SearchCommunitiesRespons
 		communities[i] = toCommunitySummaryDTO(c[i])
 	}
 	return SearchCommunitiesResponse{Communities: communities}
+}
+
+func toListCommunitiesResponse(c []*CommunitySummary, nextCursor string) ListCommunitiesResponse {
+	communities := make([]CommunitySummaryDTO, len(c))
+	for i := range c {
+		communities[i] = toCommunitySummaryDTO(c[i])
+	}
+	return ListCommunitiesResponse{Communities: communities, NextCursor: nextCursor}
 }

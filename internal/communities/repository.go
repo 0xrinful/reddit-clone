@@ -20,6 +20,7 @@ type Repository interface {
 	Delete(ctx context.Context, id int64) error
 	Update(ctx context.Context, id int64, p UpdateParams) (*Community, error)
 	Search(ctx context.Context, p SearchParams) ([]*CommunitySummary, error)
+	List(ctx context.Context, p ListParams) ([]*CommunitySummary, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -213,16 +214,52 @@ func (r *postgresRepository) Search(
 
 	communities := make([]*CommunitySummary, 0, p.Pagination.Limit)
 	for rows.Next() {
-		var c CommunitySummary
-		err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.CreatedAt)
+		c, err := scanSummary(rows)
 		if err != nil {
 			return nil, err
 		}
-		c.CreatedAt = c.CreatedAt.UTC()
-		communities = append(communities, &c)
+		communities = append(communities, c)
 	}
 
 	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return communities, nil
+}
+
+func (r *postgresRepository) List(ctx context.Context, p ListParams) ([]*CommunitySummary, error) {
+	query := query.New()
+	cursor := p.Pagination.Cursor
+
+	query.Select("id, name, description, created_at", "communities")
+	if cursor != nil {
+		query.Where("(created_at, id) < (?, ?)", cursor.CreatedAt, cursor.ID)
+	}
+	query.Order("created_at DESC, id DESC")
+	query.Limit(p.Pagination.Limit)
+
+	q, args := query.ToSql()
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	rows, err := r.db(ctx).QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	communities := make([]*CommunitySummary, 0, p.Pagination.Limit)
+	for rows.Next() {
+		c, err := scanSummary(rows)
+		if err != nil {
+			return nil, err
+		}
+		communities = append(communities, c)
+	}
+
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
@@ -248,6 +285,16 @@ func scanCommunity(row *sql.Row) (*Community, error) {
 
 	if ownerID.Valid {
 		c.OwnerID = &ownerID.Int64
+	}
+	c.CreatedAt = c.CreatedAt.UTC()
+	return &c, nil
+}
+
+func scanSummary(rows *sql.Rows) (*CommunitySummary, error) {
+	var c CommunitySummary
+	err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.CreatedAt)
+	if err != nil {
+		return nil, err
 	}
 	c.CreatedAt = c.CreatedAt.UTC()
 	return &c, nil

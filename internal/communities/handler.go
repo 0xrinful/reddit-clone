@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
+	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
 	"github.com/0xrinful/reddit-clone/internal/shared/validator"
@@ -159,4 +160,39 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.responder.JSON(w, http.StatusOK, toSearchCommunitiesResponse(communities))
+}
+
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	v := validator.New()
+	pageParams := request.ParseCursorPagination(r, v, pagination.DecodeCommunityCursor)
+
+	if !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	limit := pageParams.Limit
+	pageParams.Limit += 1 // used to determine if there is a next cursor
+
+	params := ListParams{
+		Pagination: pageParams,
+	}
+
+	communities, err := h.service.List(r.Context(), params)
+	if err != nil {
+		h.responder.ServerError(w, err)
+		return
+	}
+
+	var nextCursor string
+	if len(communities) > limit {
+		page := communities[:limit] // trim extra row used for next page check
+		last := page[len(page)-1]
+		next := &pagination.CommunityCursor{ID: last.ID, CreatedAt: &last.CreatedAt}
+
+		nextCursor = next.Encode()
+		communities = page
+	}
+
+	h.responder.JSON(w, http.StatusOK, toListCommunitiesResponse(communities, nextCursor))
 }
