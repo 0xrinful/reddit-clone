@@ -13,6 +13,7 @@ var (
 	ErrInvalidCredentials        = errors.New("invalid credentials")
 	ErrRefreshTokenReuse         = errors.New("refresh token reuse")
 	ErrForbidden                 = errors.New("forbidden")
+	ErrSelfBan                   = errors.New("can't ban self")
 	ErrOwnershipTransferRequired = errors.New(
 		"community ownership must be transferred before leaving",
 	)

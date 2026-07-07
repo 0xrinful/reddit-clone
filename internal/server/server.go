@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/auth"
+	"github.com/0xrinful/reddit-clone/internal/bans"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
 	"github.com/0xrinful/reddit-clone/internal/members"
@@ -34,6 +35,7 @@ type Server struct {
 	users       *users.Handler
 	auth        *auth.Handler
 	members     *members.Handler
+	bans        *bans.Handler
 }
 
 func New(
@@ -46,6 +48,7 @@ func New(
 	authSvc auth.Service,
 	tokensSvc tokens.Service,
 	membersSvc members.Service,
+	modsSvc bans.Service,
 ) *Server {
 	responder := response.NewResponder(logger)
 
@@ -54,6 +57,7 @@ func New(
 	usersHandler := users.NewHandler(usersSvc, responder)
 	authHandler := auth.NewHandler(authSvc, tokensSvc, responder)
 	membersHandler := members.NewHandler(membersSvc, responder)
+	modsHandler := bans.NewHandler(modsSvc, responder)
 
 	server := &Server{
 		cfg:    cfg,
@@ -68,6 +72,7 @@ func New(
 		users:       usersHandler,
 		auth:        authHandler,
 		members:     membersHandler,
+		bans:        modsHandler,
 	}
 
 	router := server.setupRoutes(responder)
