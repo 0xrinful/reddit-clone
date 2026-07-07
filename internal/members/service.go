@@ -10,6 +10,7 @@ import (
 type Service interface {
 	Join(ctx context.Context, communityID, userID int64) error
 	Leave(ctx context.Context, communityID, userID int64) error
+	List(ctx context.Context, p ListParams) ([]*MembershipView, error)
 }
 
 type service struct {
@@ -43,4 +44,8 @@ func (s *service) Leave(ctx context.Context, communityID, userID int64) error {
 		return errs.ErrOwnershipTransferRequired
 	}
 	return s.membersRepo.Delete(ctx, communityID, userID)
+}
+
+func (s *service) List(ctx context.Context, p ListParams) ([]*MembershipView, error) {
+	return s.membersRepo.List(ctx, p)
 }

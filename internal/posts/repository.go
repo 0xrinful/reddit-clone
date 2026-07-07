@@ -156,37 +156,37 @@ func (r *postgresRepository) List(
 	ctx context.Context,
 	params ListParams,
 ) ([]*PostSummary, error) {
-	query := query.New()
+	q := query.New()
 	cursor := params.Pagination.Cursor
 
-	query.Select("p.id, p.title, p.body, p.score, p.created_at, u.username, c.name", "posts p")
-	query.Join("communities c ON p.community_id = c.id")
-	query.Join("users u ON p.user_id = u.id")
+	q.Select("p.id, p.title, p.body, p.score, p.created_at, u.username, c.name", "posts p")
+	q.Join("communities c ON p.community_id = c.id")
+	q.Join("users u ON p.user_id = u.id")
 
-	query.Where("p.community_id = ?", params.CommunityID)
+	q.Where("p.community_id = ?", params.CommunityID)
 
 	switch params.Sort {
 	case SortByNew:
 		if cursor != nil {
-			query.Where("(p.created_at, p.id) < (?, ?)", cursor.CreatedAt, cursor.ID)
+			q.Where("(p.created_at, p.id) < (?, ?)", cursor.CreatedAt, cursor.ID)
 		}
-		query.Order("p.created_at DESC, p.id DESC")
+		q.Order("p.created_at DESC, p.id DESC")
 	case SortByTop, SortByHot:
 		if cursor != nil {
-			query.Where("(p.score, p.id) < (?, ?)", cursor.Score, cursor.ID)
+			q.Where("(p.score, p.id) < (?, ?)", cursor.Score, cursor.ID)
 		}
-		query.Order("p.score DESC, p.id DESC")
+		q.Order("p.score DESC, p.id DESC")
 	default:
 		panic("invalid sort value")
 	}
 
-	query.Limit(params.Pagination.Limit)
-	q, args := query.ToSql()
+	q.Limit(params.Pagination.Limit)
+	query, args := q.ToSql()
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	rows, err := r.db(ctx).QueryContext(ctx, q, args...)
+	rows, err := r.db(ctx).QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

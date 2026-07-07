@@ -8,12 +8,14 @@ import (
 
 	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
+	"github.com/0xrinful/reddit-clone/internal/shared/query"
 )
 
 type Repository interface {
 	Get(ctx context.Context, communityID, userID int64) (*Membership, error)
 	Create(ctx context.Context, m *Membership) error
 	Delete(ctx context.Context, communityID, userID int64) error
+	List(ctx context.Context, p ListParams) ([]*MembershipView, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -72,6 +74,50 @@ func (r *postgresRepository) Delete(ctx context.Context, communityID, userID int
 	return err
 }
 
+func (r *postgresRepository) List(ctx context.Context, p ListParams) ([]*MembershipView, error) {
+	q := query.New()
+	cursor := p.Pagination.Cursor
+
+	q.Select(
+		"m.community_id, m.user_id, m.role, m.joined_at, u.username, u.avatar_url",
+		"community_members m",
+	)
+	q.Join("users u on m.user_id = u.id")
+	q.Where("community_id = ?", p.CommunityID)
+
+	if cursor != nil {
+		q.Where("(m.joined_at, m.user_id) < (?, ?)", cursor.JoinedAt, cursor.UserID)
+	}
+	q.Order("m.joined_at DESC, m.user_id DESC")
+	q.Limit(p.Pagination.Limit)
+
+	query, args := q.ToSql()
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	rows, err := r.db(ctx).QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	memberships := make([]*MembershipView, 0, p.Pagination.Limit)
+	for rows.Next() {
+		m, err := scanView(rows)
+		if err != nil {
+			return nil, err
+		}
+		memberships = append(memberships, m)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return memberships, nil
+}
+
 func scanMembership(row *sql.Row) (*Membership, error) {
 	var m Membership
 
@@ -84,5 +130,22 @@ func scanMembership(row *sql.Row) (*Membership, error) {
 		return nil, err
 	}
 
+	return &m, nil
+}
+
+func scanView(rows *sql.Rows) (*MembershipView, error) {
+	var m MembershipView
+	var avatarUrl sql.NullString
+
+	err := rows.Scan(&m.CommunityID, &m.UserID, &m.Role, &m.JoinedAt, &m.Username, &avatarUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	if avatarUrl.Valid {
+		m.AvatarUrl = &avatarUrl.String
+	}
+
+	m.JoinedAt = m.JoinedAt.UTC()
 	return &m, nil
 }

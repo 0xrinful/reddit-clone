@@ -229,22 +229,22 @@ func (r *postgresRepository) Search(
 }
 
 func (r *postgresRepository) List(ctx context.Context, p ListParams) ([]*CommunitySummary, error) {
-	query := query.New()
+	q := query.New()
 	cursor := p.Pagination.Cursor
 
-	query.Select("id, name, description, created_at", "communities")
+	q.Select("id, name, description, created_at", "communities")
 	if cursor != nil {
-		query.Where("(created_at, id) < (?, ?)", cursor.CreatedAt, cursor.ID)
+		q.Where("(created_at, id) < (?, ?)", cursor.CreatedAt, cursor.ID)
 	}
-	query.Order("created_at DESC, id DESC")
-	query.Limit(p.Pagination.Limit)
+	q.Order("created_at DESC, id DESC")
+	q.Limit(p.Pagination.Limit)
 
-	q, args := query.ToSql()
+	query, args := q.ToSql()
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	rows, err := r.db(ctx).QueryContext(ctx, q, args...)
+	rows, err := r.db(ctx).QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

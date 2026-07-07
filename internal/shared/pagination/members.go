@@ -5,9 +5,8 @@ import (
 )
 
 type MemberCursor struct {
-	UserID      int64     `json:"user_id"`
-	CommunityID int64     `json:"community_id"`
-	JoinedAt    time.Time `json:"joined_at"`
+	UserID   int64     `json:"user_id"`
+	JoinedAt time.Time `json:"joined_at"`
 }
 
 func (c *MemberCursor) Encode() string {

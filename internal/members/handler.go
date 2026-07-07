@@ -5,8 +5,10 @@ import (
 	"net/http"
 
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
+	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
+	"github.com/0xrinful/reddit-clone/internal/shared/validator"
 )
 
 type Handler struct {
@@ -53,4 +55,42 @@ func (h *Handler) Leave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	community := request.GetCommunity(r)
+
+	v := validator.New()
+	pageParams := request.ParseCursorPagination(r, v, pagination.DecodeMemberCursor)
+
+	if !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	limit := pageParams.Limit
+	pageParams.Limit += 1
+
+	params := ListParams{
+		CommunityID: community.ID,
+		Pagination:  pageParams,
+	}
+
+	memberships, err := h.service.List(r.Context(), params)
+	if err != nil {
+		h.responder.ServerError(w, err)
+		return
+	}
+
+	var nextCursor string
+	if len(memberships) > limit {
+		page := memberships[:limit]
+		last := page[len(page)-1]
+		cursor := &pagination.MemberCursor{UserID: last.UserID, JoinedAt: last.JoinedAt}
+
+		nextCursor = cursor.Encode()
+		memberships = page
+	}
+
+	h.responder.JSON(w, http.StatusOK, toListMembersResponse(memberships, nextCursor))
 }

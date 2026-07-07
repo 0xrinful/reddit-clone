@@ -1,6 +1,10 @@
 package members
 
-import "time"
+import (
+	"time"
+
+	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
+)
 
 type CommunityRole string
 
@@ -25,4 +29,9 @@ type Membership struct {
 type MembershipView struct {
 	Membership
 	Member
+}
+
+type ListParams struct {
+	CommunityID int64
+	Pagination  pagination.CursorParams[pagination.MemberCursor]
 }
