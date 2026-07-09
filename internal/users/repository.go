@@ -15,6 +15,7 @@ import (
 type Repository interface {
 	Create(ctx context.Context, u *User) error
 	GetByEmail(ctx context.Context, email string) (*User, error)
+	GetByUsername(ctx context.Context, email string) (*User, error)
 	SetActivated(ctx context.Context, userID int64) error
 }
 
@@ -75,6 +76,46 @@ func (r *postgresRepository) GetByEmail(ctx context.Context, email string) (*Use
 	defer cancel()
 
 	err := r.db(ctx).QueryRowContext(ctx, query, email).Scan(
+		&user.ID, &user.Username, &user.Email, &user.Password.hash,
+		&avatarUrl, &user.CreatedAt, &user.Activated,
+		&activatedAt,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errs.ErrNotFound
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if avatarUrl.Valid {
+		user.AvatarUrl = &avatarUrl.String
+	}
+
+	if activatedAt.Valid {
+		activatedAt := activatedAt.Time.UTC()
+		user.ActivatedAt = &activatedAt
+	}
+
+	user.CreatedAt = user.CreatedAt.UTC()
+	return &user, nil
+}
+
+func (r *postgresRepository) GetByUsername(ctx context.Context, username string) (*User, error) {
+	query := `
+		SELECT id, username, email, hashed_password, avatar_url, 
+		created_at, activated, activated_at
+		FROM users WHERE username = $1`
+
+	var user User
+	var avatarUrl sql.NullString
+	var activatedAt sql.NullTime
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
+	defer cancel()
+
+	err := r.db(ctx).QueryRowContext(ctx, query, username).Scan(
 		&user.ID, &user.Username, &user.Email, &user.Password.hash,
 		&avatarUrl, &user.CreatedAt, &user.Activated,
 		&activatedAt,

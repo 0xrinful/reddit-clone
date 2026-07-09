@@ -71,6 +71,12 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 						r.Delete("/", s.members.Leave)
 					})
 				})
+
+				r.Route("/bans", func(r *rush.Router) {
+					r.Use(m.WriteLimit())
+					r.Post("/", s.bans.Ban)
+					r.Delete("/", s.bans.UnBan)
+				})
 			})
 		})
 

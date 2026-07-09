@@ -34,6 +34,12 @@
 │       │   └── {username}/
 │       │       └── DELETE           → remove moderator (owner)
 │       │
+│       ├── bans/
+│       │   ├── GET                  → list banned members
+│       │   ├── POST                 → ban member (moderator)
+│       │   └── {username}/
+│       │       └── DELETE           → unban member (moderator)
+│       │
 │       └── posts/
 │           ├── GET                  → list posts ✅
 │           └── POST                 → create post (+ auth) ✅
