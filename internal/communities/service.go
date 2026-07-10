@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/0xrinful/reddit-clone/internal/database"
-	"github.com/0xrinful/reddit-clone/internal/members"
+	"github.com/0xrinful/reddit-clone/internal/domain"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
@@ -18,16 +18,20 @@ type Service interface {
 	List(ctx context.Context, p ListParams) ([]*CommunitySummary, error)
 }
 
+type MembersRepo interface {
+	Create(ctx context.Context, communityID, userID int64, role domain.Role) error
+}
+
 type service struct {
 	txBeginner      database.TxBeginner
 	communitiesRepo Repository
-	membersRepo     members.Repository
+	membersRepo     MembersRepo
 }
 
 func NewService(
 	txBeginner database.TxBeginner,
 	communitiesRepo Repository,
-	membersRepo members.Repository,
+	membersRepo MembersRepo,
 ) Service {
 	return &service{
 		txBeginner:      txBeginner,
@@ -63,13 +67,7 @@ func (s *service) Create(ctx context.Context, p CreateParams) (*Community, error
 		return nil, err
 	}
 
-	m := &members.Membership{
-		CommunityID: c.ID,
-		UserID:      p.OwnerID,
-		Role:        members.RoleOwner,
-	}
-
-	if err := s.membersRepo.Create(ctxTx, m); err != nil {
+	if err := s.membersRepo.Create(ctxTx, c.ID, p.OwnerID, domain.RoleOwner); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +85,7 @@ func (s *service) Delete(ctx context.Context, name string, requesterID int64) er
 	}
 
 	if community.OwnerID == nil || *community.OwnerID != requesterID {
-		return errs.ErrForbidden
+		return errs.ErrPermissionDenied
 	}
 
 	return s.communitiesRepo.Delete(ctx, community.ID)
@@ -106,7 +104,7 @@ func (s *service) Update(
 
 	// TODO: allow mods in the feature
 	if community.OwnerID == nil || *community.OwnerID != requesterID {
-		return nil, errs.ErrForbidden
+		return nil, errs.ErrPermissionDenied
 	}
 
 	return s.communitiesRepo.Update(ctx, community.ID, p)

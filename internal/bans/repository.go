@@ -29,11 +29,12 @@ func (r *postgresRepository) db(ctx context.Context) database.DB {
 
 func (r *postgresRepository) Create(ctx context.Context, b *BanRecord) error {
 	query := `
-		INSERT INTO bans (community_id, user_id, banned_by, expiry, reason)
+		INSERT INTO bans (community_id, user_id, banned_by, reason, expiry)
 		VALUES($1, $2, $3, $4, $5)
-		ON CONFLICT DO NOTHING
-	`
-	args := []any{b.CommunityID, b.UserID, b.BannedBy, b.Expiry, b.Reason}
+		ON CONFLICT (community_id, user_id) DO NOTHING`
+
+	args := []any{b.CommunityID, b.UserID, b.BannedBy, b.Reason, b.Expiry}
+
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -41,17 +42,12 @@ func (r *postgresRepository) Create(ctx context.Context, b *BanRecord) error {
 	return err
 }
 
-func (r *postgresRepository) Delete(
-	ctx context.Context,
-	userID, communityID int64,
-) error {
-	query := `
-		DELETE FROM bans
-		WHERE user_id = $1 AND community_id = $2
-	`
+func (r *postgresRepository) Delete(ctx context.Context, communityID, userID int64) error {
+	query := `DELETE FROM bans WHERE community_id = $1 AND user_id = $2`
+
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	_, err := r.db(ctx).ExecContext(ctx, query, userID, communityID)
+	_, err := r.db(ctx).ExecContext(ctx, query, communityID, userID)
 	return err
 }

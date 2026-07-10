@@ -51,7 +51,7 @@ func main() {
 	usersRepo := users.NewRepository(db)
 	tokensRepo := tokens.NewRepository(db)
 	membersRepo := members.NewRepository(db)
-	banssRepo := bans.NewRepository(db)
+	bansRepo := bans.NewRepository(db)
 
 	communitiesSvc := communities.NewService(db, communitiesRepo, membersRepo)
 	postsSvc := posts.NewService(postsRepo)
@@ -59,13 +59,13 @@ func main() {
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)
 	tokensSvc := tokens.NewService(db, tokensRepo, cfg.JWT)
 	membersSvc := members.NewService(membersRepo)
-	modsSvc := bans.NewService(db, banssRepo, membersRepo, usersRepo)
+	bansSvc := bans.NewService(db, bansRepo, membersRepo, usersRepo)
 
 	srv := server.New(
 		cfg, logger, bg,
 		communitiesSvc,
 		postsSvc, usersSvc, authSvc,
-		tokensSvc, membersSvc, modsSvc,
+		tokensSvc, membersSvc, bansSvc,
 	)
 
 	// graceful shutdown

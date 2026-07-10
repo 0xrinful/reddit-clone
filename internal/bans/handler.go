@@ -38,25 +38,21 @@ func (h *Handler) Ban(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := CreateParams{
-		UserID:      user.ID,
 		CommunityID: community.ID,
 		Username:    input.Username,
-		Duration:    Duration(input.Duration),
 		Reason:      input.Reason,
+		Duration:    input.Duration,
 	}
-	err = h.service.Create(r.Context(), params)
+
+	err = h.service.Ban(r.Context(), user.ID, params)
 	if err != nil {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
-
-			// FIXME: change the response error for user not found
 			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrForbidden):
-			h.responder.Forbidden(w)
+		case errors.Is(err, errs.ErrPermissionDenied):
+			h.responder.PermissionDenied(w)
 		case errors.Is(err, errs.ErrSelfBan):
-
-			// FIXME: change error response for self banning
-			h.responder.Error(w, http.StatusBadRequest, "self ban", "can't ban self")
+			h.responder.ForbiddenMsg(w, "self_ban", "can't ban self")
 		default:
 			h.responder.ServerError(w, err)
 		}
@@ -65,36 +61,26 @@ func (h *Handler) Ban(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) UnBan(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Unban(w http.ResponseWriter, r *http.Request) {
 	user, _ := request.GetUser(r)
 	community := request.GetCommunity(r)
 
-	var input DeleteParams
-
-	err := request.DecodeJSON(w, r, &input)
-	if err != nil {
-		h.responder.DecodeError(w, err)
-		return
-	}
-
 	params := DeleteParams{
-		UserID:      user.ID,
 		CommunityID: community.ID,
-		Username:    input.Username,
+		Username:    r.PathValue("username"),
 	}
 
-	err = h.service.Delete(r.Context(), params)
+	err := h.service.Unban(r.Context(), user.ID, params)
 	if err != nil {
 		switch {
-		case errors.Is(err, errs.ErrForbidden):
-			h.responder.Forbidden(w)
 		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
+		case errors.Is(err, errs.ErrPermissionDenied):
+			h.responder.Forbidden(w)
 		default:
 			h.responder.ServerError(w, err)
 		}
 		return
 	}
-
 	w.WriteHeader(http.StatusNoContent)
 }

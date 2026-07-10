@@ -4,38 +4,45 @@ import (
 	"context"
 
 	"github.com/0xrinful/reddit-clone/internal/database"
-	"github.com/0xrinful/reddit-clone/internal/members"
+	"github.com/0xrinful/reddit-clone/internal/domain"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
-	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
 type Service interface {
-	Create(ctx context.Context, p CreateParams) error
-	Delete(ctx context.Context, p DeleteParams) error
+	Ban(ctx context.Context, requesterID int64, p CreateParams) error
+	Unban(ctx context.Context, requesterID int64, p DeleteParams) error
+}
+
+type MembersRepo interface {
+	GetRole(ctx context.Context, communityID, userID int64) (domain.Role, error)
+}
+
+type UsersRepo interface {
+	GetIDByUsername(ctx context.Context, username string) (int64, error)
 }
 
 type service struct {
 	txBeginner  database.TxBeginner
-	modsRepo    Repository
-	membersRepo members.Repository
-	usersRepo   users.Repository
+	bansRepo    Repository
+	membersRepo MembersRepo
+	usersRepo   UsersRepo
 }
 
 func NewService(
 	txBeginner database.TxBeginner,
 	bansRepo Repository,
-	membersRepo members.Repository,
-	usersRepo users.Repository,
+	membersRepo MembersRepo,
+	usersRepo UsersRepo,
 ) Service {
 	return &service{
 		txBeginner:  txBeginner,
-		modsRepo:    bansRepo,
+		bansRepo:    bansRepo,
 		membersRepo: membersRepo,
 		usersRepo:   usersRepo,
 	}
 }
 
-func (s *service) Create(ctx context.Context, p CreateParams) error {
+func (s *service) Ban(ctx context.Context, requesterID int64, p CreateParams) error {
 	tx, err := s.txBeginner.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -43,43 +50,49 @@ func (s *service) Create(ctx context.Context, p CreateParams) error {
 	defer tx.Rollback()
 	ctxTx := database.WithTx(ctx, tx)
 
-	u, err := s.membersRepo.Get(ctxTx, p.CommunityID, p.UserID)
+	requesterRole, err := s.membersRepo.GetRole(ctxTx, p.CommunityID, requesterID)
 	if err != nil {
 		return err
 	}
 
-	if u.Role != members.RoleModerator && u.Role != members.RoleOwner {
-		return errs.ErrForbidden
+	if !requesterRole.IsOwner() && !requesterRole.IsModerator() {
+		return errs.ErrPermissionDenied
 	}
 
-	t, err := s.usersRepo.GetByUsername(ctxTx, p.Username)
+	targetID, err := s.usersRepo.GetIDByUsername(ctxTx, p.Username)
 	if err != nil {
 		return err
 	}
 
-	// NOTE: overrules moderator self banning and owner banning self
-	if t.ID == u.UserID {
+	if requesterID == targetID {
 		return errs.ErrSelfBan
 	}
 
-	// TODO: maybe check if moderator banning owner?
+	targetRole, err := s.membersRepo.GetRole(ctxTx, p.CommunityID, targetID)
+	if err != nil {
+		return err
+	}
+
+	if !requesterRole.CanManage(targetRole) {
+		return errs.ErrPermissionDenied
+	}
 
 	b := &BanRecord{
-		BannedBy:    p.UserID,
 		CommunityID: p.CommunityID,
-		UserID:      t.ID,
+		UserID:      targetID,
+		BannedBy:    &requesterID,
 		Reason:      p.Reason,
 		Expiry:      p.Duration.Expiry(),
 	}
 
-	if err = s.modsRepo.Create(ctxTx, b); err != nil {
+	if err = s.bansRepo.Create(ctxTx, b); err != nil {
 		return err
 	}
 
 	return tx.Commit()
 }
 
-func (s *service) Delete(ctx context.Context, p DeleteParams) error {
+func (s *service) Unban(ctx context.Context, requesterID int64, p DeleteParams) error {
 	tx, err := s.txBeginner.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -87,21 +100,30 @@ func (s *service) Delete(ctx context.Context, p DeleteParams) error {
 	defer tx.Rollback()
 	ctxTx := database.WithTx(ctx, tx)
 
-	u, err := s.membersRepo.Get(ctxTx, p.CommunityID, p.UserID)
+	requesterRole, err := s.membersRepo.GetRole(ctxTx, p.CommunityID, requesterID)
 	if err != nil {
 		return err
 	}
 
-	if u.Role != members.RoleModerator && u.Role != members.RoleOwner {
-		return errs.ErrForbidden
+	if !requesterRole.IsOwner() && !requesterRole.IsModerator() {
+		return errs.ErrPermissionDenied
 	}
 
-	t, err := s.usersRepo.GetByUsername(ctxTx, p.Username)
+	targetID, err := s.usersRepo.GetIDByUsername(ctxTx, p.Username)
 	if err != nil {
 		return err
 	}
 
-	err = s.modsRepo.Delete(ctx, p.CommunityID, t.ID)
+	targetRole, err := s.membersRepo.GetRole(ctxTx, p.CommunityID, targetID)
+	if err != nil {
+		return err
+	}
+
+	if !requesterRole.CanManage(targetRole) {
+		return errs.ErrPermissionDenied
+	}
+
+	err = s.bansRepo.Delete(ctxTx, p.CommunityID, targetID)
 	if err != nil {
 		return err
 	}

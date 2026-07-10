@@ -63,6 +63,7 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 				r.With(m.ReadLimit()).Get("/posts", s.posts.List)
 				r.With(m.WriteLimit(), m.RequireAuth).Post("/posts", s.posts.Create)
 
+				// ─── Members ──────────────────────────────────────────────────
 				r.Route("/members", func(r *rush.Router) {
 					r.Get("/", s.members.List)
 					r.Route("/me", func(r *rush.Router) {
@@ -72,10 +73,13 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 					})
 				})
 
+				// ─── Bans ──────────────────────────────────────────────────
 				r.Route("/bans", func(r *rush.Router) {
-					r.Use(m.WriteLimit())
-					r.Post("/", s.bans.Ban)
-					r.Delete("/", s.bans.UnBan)
+					r.Use(m.RequireAuth)
+					r.Group(func(r *rush.Router) {
+						r.Post("/", s.bans.Ban)
+						r.Delete("/{username}", s.bans.Unban)
+					})
 				})
 			})
 		})

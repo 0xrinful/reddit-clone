@@ -2,32 +2,63 @@ package bans
 
 import "time"
 
-var (
-	BanDay                      = 24 * time.Hour
-	BanWeek                     = 7 * BanDay
-	BanMonth                    = 30 * BanDay
-	BanPermanent *time.Duration = nil
+type BanDuration int
+
+const (
+	BanPermanent BanDuration = iota
+	BanDay
+	BanThreeDays
+	BanWeek
+	BanMonth
 )
 
+func (b BanDuration) Expiry() *time.Time {
+	var expiry time.Time
+	now := time.Now()
+
+	switch b {
+	case BanDay:
+		expiry = now.AddDate(0, 0, 1)
+	case BanThreeDays:
+		expiry = now.AddDate(0, 0, 3)
+	case BanWeek:
+		expiry = now.AddDate(0, 0, 7)
+	case BanMonth:
+		expiry = now.AddDate(0, 1, 0)
+	case BanPermanent:
+		return nil
+	default:
+		return nil
+	}
+
+	return &expiry
+}
+
+func (d BanDuration) Valid() bool {
+	switch d {
+	case BanPermanent, BanDay, BanThreeDays, BanWeek, BanMonth:
+		return true
+	}
+	return false
+}
+
 type BanRecord struct {
-	UserID      int64
 	CommunityID int64
-	BannedBy    int64
-	BannedAt    *time.Time
-	Expiry      *time.Time
+	UserID      int64
+	BannedBy    *int64
 	Reason      string
+	CreatedAt   time.Time
+	Expiry      *time.Time
 }
 
 type CreateParams struct {
-	UserID      int64
 	CommunityID int64
 	Username    string
 	Reason      string
-	Duration    Duration
+	Duration    BanDuration
 }
 
 type DeleteParams struct {
-	UserID      int64
 	CommunityID int64
 	Username    string
 }

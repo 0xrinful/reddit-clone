@@ -36,9 +36,9 @@
 │       │
 │       ├── bans/
 │       │   ├── GET                  → list banned members
-│       │   ├── POST                 → ban member (moderator)
+│       │   ├── POST                 → ban member (moderator) ✅
 │       │   └── {username}/
-│       │       └── DELETE           → unban member (moderator)
+│       │       └── DELETE           → unban member (moderator) ✅
 │       │
 │       └── posts/
 │           ├── GET                  → list posts ✅

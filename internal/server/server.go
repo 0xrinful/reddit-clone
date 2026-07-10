@@ -48,7 +48,7 @@ func New(
 	authSvc auth.Service,
 	tokensSvc tokens.Service,
 	membersSvc members.Service,
-	modsSvc bans.Service,
+	bansSvc bans.Service,
 ) *Server {
 	responder := response.NewResponder(logger)
 
@@ -57,7 +57,7 @@ func New(
 	usersHandler := users.NewHandler(usersSvc, responder)
 	authHandler := auth.NewHandler(authSvc, tokensSvc, responder)
 	membersHandler := members.NewHandler(membersSvc, responder)
-	modsHandler := bans.NewHandler(modsSvc, responder)
+	bansHandler := bans.NewHandler(bansSvc, responder)
 
 	server := &Server{
 		cfg:    cfg,
@@ -72,7 +72,7 @@ func New(
 		users:       usersHandler,
 		auth:        authHandler,
 		members:     membersHandler,
-		bans:        modsHandler,
+		bans:        bansHandler,
 	}
 
 	router := server.setupRoutes(responder)
