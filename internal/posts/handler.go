@@ -114,8 +114,8 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrForbidden):
-			h.responder.Forbidden(w)
+		case errors.Is(err, errs.ErrPermissionDenied):
+			h.responder.PermissionDenied(w)
 		default:
 			h.responder.ServerError(w, err)
 		}
@@ -140,8 +140,8 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrForbidden):
-			h.responder.Forbidden(w)
+		case errors.Is(err, errs.ErrPermissionDenied):
+			h.responder.PermissionDenied(w)
 		default:
 			h.responder.ServerError(w, err)
 		}
@@ -158,7 +158,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	pageParams := request.ParseCursorPagination(r, v, pagination.DecodePostCursor)
 
 	sort := SortBy(request.ReadString(r.URL.Query(), "sort", "new"))
-	v.Check(sort.IsValid(), "sort", "invalid sort value")
+	v.Check(sort.Valid(), "sort", "invalid sort value")
 
 	if !v.Valid() {
 		h.responder.ValidationError(w, v.Errors)

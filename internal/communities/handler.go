@@ -89,8 +89,8 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrForbidden):
-			h.responder.Forbidden(w)
+		case errors.Is(err, errs.ErrPermissionDenied):
+			h.responder.PermissionDenied(w)
 		default:
 			h.responder.ServerError(w, err)
 		}
@@ -122,8 +122,8 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
 			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrForbidden):
-			h.responder.Forbidden(w)
+		case errors.Is(err, errs.ErrPermissionDenied):
+			h.responder.PermissionDenied(w)
 		case errors.Is(err, errs.ErrDuplicateCommunityName):
 			v.AddError("name", "community name is already in use")
 			h.responder.ValidationError(w, v.Errors)

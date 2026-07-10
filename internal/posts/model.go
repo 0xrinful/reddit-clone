@@ -61,13 +61,12 @@ const (
 	SortByHot SortBy = "hot" // TODO: implement hot sort later
 )
 
-func (s SortBy) IsValid() bool {
+func (s SortBy) Valid() bool {
 	switch s {
 	case SortByNew, SortByTop, SortByHot:
 		return true
-	default:
-		return false
 	}
+	return false
 }
 
 type ListParams struct {

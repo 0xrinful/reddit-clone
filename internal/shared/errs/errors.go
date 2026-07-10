@@ -12,6 +12,7 @@ var (
 	ErrInvalidToken              = errors.New("invalid or expired token")
 	ErrInvalidCredentials        = errors.New("invalid credentials")
 	ErrRefreshTokenReuse         = errors.New("refresh token reuse")
+	ErrPermissionDenied          = errors.New("permission denied")
 	ErrForbidden                 = errors.New("forbidden")
 	ErrSelfBan                   = errors.New("can't ban self")
 	ErrOwnershipTransferRequired = errors.New(

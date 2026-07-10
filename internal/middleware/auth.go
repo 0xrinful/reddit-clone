@@ -60,7 +60,7 @@ func (m *Middleware) RequireUnauth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, authenticated := request.GetUser(r)
 		if authenticated {
-			m.responder.Forbidden(w)
+			m.responder.ForbiddenMsg(w, "already_authenticated", "you are already authenticated")
 			return
 		}
 		next.ServeHTTP(w, r)

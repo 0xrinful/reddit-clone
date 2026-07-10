@@ -91,11 +91,15 @@ func (r *Responder) Unauthorized(w http.ResponseWriter) {
 }
 
 func (r *Responder) Forbidden(w http.ResponseWriter) {
-	r.Error(w, http.StatusForbidden, "forbidden", "access denied")
+	r.Error(w, http.StatusForbidden, "forbidden", "forbidden")
 }
 
 func (r *Responder) ForbiddenMsg(w http.ResponseWriter, code, message string) {
 	r.Error(w, http.StatusForbidden, code, message)
+}
+
+func (r *Responder) PermissionDenied(w http.ResponseWriter) {
+	r.Error(w, http.StatusForbidden, "permission_denied", "permission denied")
 }
 
 func (r *Responder) Conflict(w http.ResponseWriter) {

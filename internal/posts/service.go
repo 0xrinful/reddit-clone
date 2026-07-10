@@ -51,7 +51,7 @@ func (s *service) Update(
 	}
 
 	if post.UserID != requesterID {
-		return nil, errs.ErrForbidden
+		return nil, errs.ErrPermissionDenied
 	}
 
 	return s.repo.Update(ctx, id, p)
@@ -68,7 +68,7 @@ func (s *service) Delete(ctx context.Context, id, requesterID int64) error {
 	}
 
 	if post.UserID != requesterID {
-		return errs.ErrForbidden
+		return errs.ErrPermissionDenied
 	}
 
 	return s.repo.Delete(ctx, id)
