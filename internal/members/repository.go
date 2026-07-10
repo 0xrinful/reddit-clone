@@ -7,13 +7,15 @@ import (
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/database"
+	"github.com/0xrinful/reddit-clone/internal/domain"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/query"
 )
 
 type Repository interface {
 	Get(ctx context.Context, communityID, userID int64) (*Membership, error)
-	Create(ctx context.Context, m *Membership) error
+	GetRole(ctx context.Context, communityID, userID int64) (domain.Role, error)
+	Create(ctx context.Context, communityID, userID int64, role domain.Role) error
 	Delete(ctx context.Context, communityID, userID int64) error
 	List(ctx context.Context, p ListParams) ([]*MembershipView, error)
 }
@@ -49,13 +51,38 @@ func (r *postgresRepository) Get(
 	return scanMembership(row)
 }
 
-func (r *postgresRepository) Create(ctx context.Context, m *Membership) error {
+func (r *postgresRepository) GetRole(
+	ctx context.Context,
+	communityID, userID int64,
+) (domain.Role, error) {
+	query := `
+		SELECT role FROM community_members
+		WHERE community_id = $1 AND user_id = $2`
+
+	var role domain.Role
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	err := r.db(ctx).QueryRowContext(ctx, query, communityID, userID).Scan(&role)
+	if err != nil {
+		return "", scanError(err)
+	}
+
+	return role, nil
+}
+
+func (r *postgresRepository) Create(
+	ctx context.Context,
+	communityID, userID int64,
+	role domain.Role,
+) error {
 	query := `
 		INSERT INTO community_members (community_id, user_id, role)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (community_id, user_id) DO NOTHING`
 
-	args := []any{m.CommunityID, m.UserID, m.Role}
+	args := []any{communityID, userID, role}
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -122,12 +149,8 @@ func scanMembership(row *sql.Row) (*Membership, error) {
 	var m Membership
 
 	err := row.Scan(&m.CommunityID, &m.UserID, &m.Role, &m.JoinedAt)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errs.ErrNotFound
-	}
-
 	if err != nil {
-		return nil, err
+		return nil, scanError(err)
 	}
 
 	return &m, nil
@@ -148,4 +171,12 @@ func scanView(rows *sql.Rows) (*MembershipView, error) {
 
 	m.JoinedAt = m.JoinedAt.UTC()
 	return &m, nil
+}
+
+func scanError(err error) error {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return errs.ErrNotFound
+	}
+	return err
 }

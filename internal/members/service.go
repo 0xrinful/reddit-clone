@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/0xrinful/reddit-clone/internal/domain"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
@@ -23,12 +24,7 @@ func NewService(membersRepo Repository) Service {
 
 func (s *service) Join(ctx context.Context, communityID, userID int64) error {
 	// TODO: check ban state
-	m := &Membership{
-		CommunityID: communityID,
-		UserID:      userID,
-		Role:        RoleMember,
-	}
-	return s.membersRepo.Create(ctx, m)
+	return s.membersRepo.Create(ctx, communityID, userID, domain.RoleMember)
 }
 
 func (s *service) Leave(ctx context.Context, communityID, userID int64) error {
@@ -40,7 +36,7 @@ func (s *service) Leave(ctx context.Context, communityID, userID int64) error {
 		return err
 	}
 
-	if membership.Role == RoleOwner {
+	if membership.Role.IsOwner() {
 		return errs.ErrOwnershipTransferRequired
 	}
 	return s.membersRepo.Delete(ctx, communityID, userID)
