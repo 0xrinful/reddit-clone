@@ -3,15 +3,8 @@ package members
 import (
 	"time"
 
+	"github.com/0xrinful/reddit-clone/internal/domain"
 	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
-)
-
-type CommunityRole string
-
-const (
-	RoleMember    CommunityRole = "member"
-	RoleModerator CommunityRole = "moderator"
-	RoleOwner     CommunityRole = "owner"
 )
 
 type Member struct {
@@ -22,7 +15,7 @@ type Member struct {
 type Membership struct {
 	UserID      int64
 	CommunityID int64
-	Role        CommunityRole
+	Role        domain.Role
 	JoinedAt    time.Time
 }
 
