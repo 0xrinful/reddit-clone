@@ -14,7 +14,7 @@ import (
 
 type Repository interface {
 	Get(ctx context.Context, communityID, userID int64) (*Membership, error)
-	GetRole(ctx context.Context, communityID, userID int64) (domain.Role, error)
+	GetAuthority(ctx context.Context, communityID, userID int64) (domain.Authority, error)
 	Create(ctx context.Context, communityID, userID int64, role domain.Role) error
 	Delete(ctx context.Context, communityID, userID int64) error
 	List(ctx context.Context, p ListParams) ([]*MembershipView, error)
@@ -51,25 +51,27 @@ func (r *postgresRepository) Get(
 	return scanMembership(row)
 }
 
-func (r *postgresRepository) GetRole(
+func (r *postgresRepository) GetAuthority(
 	ctx context.Context,
 	communityID, userID int64,
-) (domain.Role, error) {
+) (domain.Authority, error) {
 	query := `
-		SELECT role FROM community_members
+		SELECT role, permissions FROM community_members
 		WHERE community_id = $1 AND user_id = $2`
 
-	var role domain.Role
+	var authority domain.Authority
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	err := r.db(ctx).QueryRowContext(ctx, query, communityID, userID).Scan(&role)
+	err := r.db(ctx).
+		QueryRowContext(ctx, query, communityID, userID).
+		Scan(&authority.Role, &authority.Permission)
 	if err != nil {
-		return "", scanError(err)
+		return domain.Authority{}, scanError(err)
 	}
 
-	return role, nil
+	return authority, nil
 }
 
 func (r *postgresRepository) Create(
