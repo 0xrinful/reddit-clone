@@ -115,7 +115,7 @@ func (s *service) VerifyRefreshToken(ctx context.Context, plain string) (*Token,
 		return nil, err
 	}
 
-	if time.Now().After(token.Expiry) {
+	if time.Now().After(token.ExpiresAt) {
 		return nil, errs.ErrInvalidToken
 	}
 

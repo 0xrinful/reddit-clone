@@ -48,7 +48,7 @@ type BanRecord struct {
 	BannedBy    *int64
 	Reason      string
 	CreatedAt   time.Time
-	Expiry      *time.Time
+	ExpiresAt   *time.Time
 }
 
 type CreateParams struct {

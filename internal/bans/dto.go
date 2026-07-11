@@ -6,13 +6,13 @@ import (
 
 // request structs
 type CreateRequest struct {
-	Username string      `json:"username"`
-	Reason   string      `json:"reason"`
-	Duration BanDuration `json:"duration"`
+	Username string `json:"username"`
+	Reason   string `json:"reason"`
+	Duration int    `json:"duration"`
 }
 
 func (c CreateRequest) Validate(v *validator.Validator) {
-	v.Check(c.Duration.Valid(), "duration", "invalid ban duration")
+	v.Check(BanDuration(c.Duration).Valid(), "duration", "invalid ban duration")
 	v.Check(c.Reason != "", "reason", "must not be empty")
 }
 

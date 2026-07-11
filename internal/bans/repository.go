@@ -29,11 +29,11 @@ func (r *postgresRepository) db(ctx context.Context) database.DB {
 
 func (r *postgresRepository) Create(ctx context.Context, b *BanRecord) error {
 	query := `
-		INSERT INTO bans (community_id, user_id, banned_by, reason, expiry)
+		INSERT INTO bans (community_id, user_id, banned_by, reason, expires_at)
 		VALUES($1, $2, $3, $4, $5)
 		ON CONFLICT (community_id, user_id) DO NOTHING`
 
-	args := []any{b.CommunityID, b.UserID, b.BannedBy, b.Reason, b.Expiry}
+	args := []any{b.CommunityID, b.UserID, b.BannedBy, b.Reason, b.ExpiresAt}
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()

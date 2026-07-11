@@ -73,7 +73,7 @@ func (s *service) Ban(ctx context.Context, requesterID int64, p CreateParams) er
 		return err
 	}
 
-	if !requesterRole.CanManage(targetRole) {
+	if !requesterRole.CanManageBan(targetRole) {
 		return errs.ErrPermissionDenied
 	}
 
@@ -82,7 +82,7 @@ func (s *service) Ban(ctx context.Context, requesterID int64, p CreateParams) er
 		UserID:      targetID,
 		BannedBy:    &requesterID,
 		Reason:      p.Reason,
-		Expiry:      p.Duration.Expiry(),
+		ExpiresAt:   p.Duration.Expiry(),
 	}
 
 	if err = s.bansRepo.Create(ctxTx, b); err != nil {
@@ -119,7 +119,7 @@ func (s *service) Unban(ctx context.Context, requesterID int64, p DeleteParams) 
 		return err
 	}
 
-	if !requesterRole.CanManage(targetRole) {
+	if !requesterRole.CanManageBan(targetRole) {
 		return errs.ErrPermissionDenied
 	}
 

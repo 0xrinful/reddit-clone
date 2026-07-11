@@ -34,10 +34,10 @@ func (r *postgresRepository) db(ctx context.Context) database.DB {
 
 func (r *postgresRepository) Insert(ctx context.Context, token *Token) error {
 	query := `
-		INSERT INTO tokens (hash, user_id, expiry, scope) 
+		INSERT INTO tokens (hash, user_id, expires_at, scope) 
 		VALUES ($1, $2, $3, $4)`
 
-	args := []any{token.Hash, token.UserID, token.Expiry, token.Scope}
+	args := []any{token.Hash, token.UserID, token.ExpiresAt, token.Scope}
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
@@ -66,7 +66,7 @@ func (r *postgresRepository) GetByHash(
 	hash []byte,
 ) (*Token, error) {
 	query := `
-		SELECT id, hash, user_id, expiry, scope FROM tokens
+		SELECT id, hash, user_id, expires_at, scope FROM tokens
 		WHERE hash = $1 AND scope = $2`
 
 	var token Token
@@ -75,7 +75,7 @@ func (r *postgresRepository) GetByHash(
 	defer cancel()
 
 	err := r.db(ctx).QueryRowContext(ctx, query, hash, scope).
-		Scan(&token.ID, &token.Hash, &token.UserID, &token.Expiry, &token.Scope)
+		Scan(&token.ID, &token.Hash, &token.UserID, &token.ExpiresAt, &token.Scope)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, errs.ErrInvalidToken
 	}
@@ -84,7 +84,7 @@ func (r *postgresRepository) GetByHash(
 		return nil, err
 	}
 
-	token.Expiry = token.Expiry.UTC()
+	token.ExpiresAt = token.ExpiresAt.UTC()
 	return &token, nil
 }
 

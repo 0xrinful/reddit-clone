@@ -18,7 +18,7 @@ type Token struct {
 	ID        int64
 	Hash      []byte
 	UserID    int64
-	Expiry    time.Time
+	ExpiresAt time.Time
 	Scope     string
 }
 
@@ -40,7 +40,7 @@ func Generate(userID int64, ttl time.Duration, scope string) (*Token, error) {
 		Plaintext: plain,
 		Hash:      hash,
 		UserID:    userID,
-		Expiry:    time.Now().Add(ttl).UTC(),
+		ExpiresAt: time.Now().Add(ttl).UTC(),
 		Scope:     scope,
 	}, nil
 }

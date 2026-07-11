@@ -20,7 +20,7 @@ func (r Role) IsUser() bool {
 	return r == RoleMember
 }
 
-func (r Role) CanManage(target Role) bool {
+func (r Role) CanManageBan(target Role) bool {
 	switch r {
 	case RoleOwner:
 		return target != RoleOwner

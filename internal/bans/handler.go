@@ -41,7 +41,7 @@ func (h *Handler) Ban(w http.ResponseWriter, r *http.Request) {
 		CommunityID: community.ID,
 		Username:    input.Username,
 		Reason:      input.Reason,
-		Duration:    input.Duration,
+		Duration:    BanDuration(input.Duration),
 	}
 
 	err = h.service.Ban(r.Context(), user.ID, params)

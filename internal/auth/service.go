@@ -105,7 +105,7 @@ func (s *service) ActivateUser(ctx context.Context, plaintext string) error {
 		return err
 	}
 
-	if time.Now().After(token.Expiry) {
+	if time.Now().After(token.ExpiresAt) {
 		return errs.ErrInvalidToken
 	}
 
