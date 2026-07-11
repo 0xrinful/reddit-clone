@@ -1,10 +1,8 @@
 package bans
 
 import (
-	"errors"
 	"net/http"
 
-	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
 	"github.com/0xrinful/reddit-clone/internal/shared/validator"
