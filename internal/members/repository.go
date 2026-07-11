@@ -15,6 +15,7 @@ import (
 type Repository interface {
 	Get(ctx context.Context, communityID, userID int64) (*Membership, error)
 	GetAuthority(ctx context.Context, communityID, userID int64) (domain.Authority, error)
+	IsMember(ctx context.Context, communityID, userID int64) (bool, error)
 	Create(ctx context.Context, communityID, userID int64, role domain.Role) error
 	Delete(ctx context.Context, communityID, userID int64) error
 	List(ctx context.Context, p ListParams) ([]*MembershipView, error)
@@ -49,6 +50,27 @@ func (r *postgresRepository) Get(
 
 	row := r.db(ctx).QueryRowContext(ctx, query, communityID, userID)
 	return scanMembership(row)
+}
+
+func (r *postgresRepository) IsMember(
+	ctx context.Context,
+	communityID, userID int64,
+) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM community_members WHERE community_id = $1 AND user_id = $2	
+		)`
+	var member bool
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	err := r.db(ctx).QueryRowContext(ctx, query, communityID, userID).Scan(&member)
+	if err != nil {
+		return false, err
+	}
+
+	return member, nil
 }
 
 func (r *postgresRepository) GetAuthority(

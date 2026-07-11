@@ -14,18 +14,26 @@ type Service interface {
 	List(ctx context.Context, params ListParams) ([]*PostSummary, error)
 }
 
+type Authorizer interface {
+	CanPost(ctx context.Context, communityID, userID int64) error
+	CanDeletePost(actorID, authorID int64) bool
+	CanModifyPost(actorID, authorID int64) bool
+}
+
 type service struct {
-	repo Repository
+	authz     Authorizer
+	postsRepo Repository
 }
 
-func NewService(repo Repository) Service {
-	return &service{repo}
+func NewService(authz Authorizer, postsRepo Repository) Service {
+	return &service{authz: authz, postsRepo: postsRepo}
 }
 
-func (s *service) Create(
-	ctx context.Context,
-	params CreateParams,
-) (*Post, error) {
+func (s *service) Create(ctx context.Context, params CreateParams) (*Post, error) {
+	if err := s.authz.CanPost(ctx, params.CommunityID, params.UserID); err != nil {
+		return nil, err
+	}
+
 	p := &Post{
 		Title:       params.Title,
 		Body:        params.Body,
@@ -33,50 +41,46 @@ func (s *service) Create(
 		CommunityID: params.CommunityID,
 	}
 
-	if err := s.repo.Create(ctx, p); err != nil {
+	if err := s.postsRepo.Create(ctx, p); err != nil {
 		return nil, err
 	}
 
 	return p, nil
 }
 
-func (s *service) Update(
-	ctx context.Context,
-	id, actorID int64,
-	p UpdateParams,
-) (*Post, error) {
-	post, err := s.repo.GetByID(ctx, id)
+func (s *service) Update(ctx context.Context, id, actorID int64, p UpdateParams) (*Post, error) {
+	post, err := s.postsRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	if post.UserID != actorID {
+	if !s.authz.CanModifyPost(actorID, post.UserID) {
 		return nil, errs.ErrPermissionDenied
 	}
 
-	return s.repo.Update(ctx, id, p)
+	return s.postsRepo.Update(ctx, id, p)
 }
 
 func (s *service) Get(ctx context.Context, id int64) (*PostView, error) {
-	return s.repo.GetView(ctx, id)
+	return s.postsRepo.GetView(ctx, id)
 }
 
 func (s *service) Delete(ctx context.Context, id, actorID int64) error {
-	post, err := s.repo.GetByID(ctx, id)
+	post, err := s.postsRepo.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	if post.UserID != actorID {
+	if !s.authz.CanDeletePost(actorID, post.UserID) {
 		return errs.ErrPermissionDenied
 	}
 
-	return s.repo.Delete(ctx, id)
+	return s.postsRepo.Delete(ctx, id)
 }
 
 func (s *service) List(
 	ctx context.Context,
 	params ListParams,
 ) ([]*PostSummary, error) {
-	return s.repo.List(ctx, params)
+	return s.postsRepo.List(ctx, params)
 }

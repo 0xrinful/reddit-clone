@@ -8,8 +8,9 @@ import (
 )
 
 type Repository interface {
+	IsBanned(ctx context.Context, communityID, userID int64) (bool, error)
 	Create(ctx context.Context, b *BanRecord) error
-	Delete(ctx context.Context, userID, communityID int64) error
+	Delete(ctx context.Context, communityID, userID int64) error
 }
 
 func NewRepository(db database.DB) Repository {
@@ -25,6 +26,28 @@ func (r *postgresRepository) db(ctx context.Context) database.DB {
 		return tx
 	}
 	return r.base
+}
+
+func (r *postgresRepository) IsBanned(
+	ctx context.Context,
+	communityID, userID int64,
+) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM bans WHERE community_id = $1 AND user_id = $2
+		)`
+
+	var banned bool
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	err := r.db(ctx).QueryRowContext(ctx, query, communityID, userID).Scan(&banned)
+	if err != nil {
+		return false, err
+	}
+
+	return banned, nil
 }
 
 func (r *postgresRepository) Create(ctx context.Context, b *BanRecord) error {
