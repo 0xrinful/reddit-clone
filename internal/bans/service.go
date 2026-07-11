@@ -13,6 +13,11 @@ type Service interface {
 	Unban(ctx context.Context, actorID int64, p DeleteParams) error
 }
 
+type Authorizer interface {
+	CanBan(actor, target domain.Authority) bool
+	CanUnban(actor, target domain.Authority) bool
+}
+
 type MembersRepo interface {
 	GetAuthority(ctx context.Context, communityID, userID int64) (domain.Authority, error)
 }
@@ -23,6 +28,7 @@ type UsersRepo interface {
 
 type service struct {
 	txBeginner  database.TxBeginner
+	authz       Authorizer
 	bansRepo    Repository
 	membersRepo MembersRepo
 	usersRepo   UsersRepo
@@ -50,22 +56,14 @@ func (s *service) Ban(ctx context.Context, actorID int64, p CreateParams) error 
 	defer tx.Rollback()
 	ctxTx := database.WithTx(ctx, tx)
 
-	actorAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, actorID)
-	if err != nil {
-		return err
-	}
-
-	if !actorAuthority.Can(domain.PermBanUsers) {
-		return errs.ErrPermissionDenied
-	}
-
 	targetID, err := s.usersRepo.GetIDByUsername(ctxTx, p.Username)
 	if err != nil {
 		return err
 	}
 
-	if actorID == targetID {
-		return errs.ErrSelfBan
+	actorAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, actorID)
+	if err != nil {
+		return err
 	}
 
 	targetAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, targetID)
@@ -73,8 +71,12 @@ func (s *service) Ban(ctx context.Context, actorID int64, p CreateParams) error 
 		return err
 	}
 
-	if !actorAuthority.CanActOn(targetAuthority) {
+	if !s.authz.CanBan(actorAuthority, targetAuthority) {
 		return errs.ErrPermissionDenied
+	}
+
+	if actorID == targetID {
+		return errs.ErrSelfBan
 	}
 
 	b := &BanRecord{
@@ -100,16 +102,12 @@ func (s *service) Unban(ctx context.Context, actorID int64, p DeleteParams) erro
 	defer tx.Rollback()
 	ctxTx := database.WithTx(ctx, tx)
 
-	actorAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, actorID)
+	targetID, err := s.usersRepo.GetIDByUsername(ctxTx, p.Username)
 	if err != nil {
 		return err
 	}
 
-	if !actorAuthority.Can(domain.PermBanUsers) {
-		return errs.ErrPermissionDenied
-	}
-
-	targetID, err := s.usersRepo.GetIDByUsername(ctxTx, p.Username)
+	actorAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, actorID)
 	if err != nil {
 		return err
 	}
@@ -119,7 +117,7 @@ func (s *service) Unban(ctx context.Context, actorID int64, p DeleteParams) erro
 		return err
 	}
 
-	if !actorAuthority.CanActOn(targetAuthority) {
+	if !s.authz.CanUnban(actorAuthority, targetAuthority) {
 		return errs.ErrPermissionDenied
 	}
 
