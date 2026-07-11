@@ -13,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/0xrinful/reddit-clone/internal/auth"
+	"github.com/0xrinful/reddit-clone/internal/authorization"
 	"github.com/0xrinful/reddit-clone/internal/bans"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
@@ -53,13 +54,14 @@ func main() {
 	membersRepo := members.NewRepository(db)
 	bansRepo := bans.NewRepository(db)
 
+	authzSvc := authorization.NewService(bansRepo, membersRepo)
 	communitiesSvc := communities.NewService(db, communitiesRepo, membersRepo)
-	postsSvc := posts.NewService(postsRepo)
+	postsSvc := posts.NewService(authzSvc, postsRepo)
 	usersSvc := users.NewService(usersRepo)
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)
 	tokensSvc := tokens.NewService(db, tokensRepo, cfg.JWT)
 	membersSvc := members.NewService(membersRepo)
-	bansSvc := bans.NewService(db, bansRepo, membersRepo, usersRepo)
+	bansSvc := bans.NewService(db, authzSvc, bansRepo, membersRepo, usersRepo)
 
 	srv := server.New(
 		cfg, logger, bg,
