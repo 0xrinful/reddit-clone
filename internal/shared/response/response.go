@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net/http"
 
+	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 )
 
@@ -90,22 +91,52 @@ func (r *Responder) Unauthorized(w http.ResponseWriter) {
 	r.Error(w, http.StatusUnauthorized, "unauthorized", "authentication required")
 }
 
-func (r *Responder) Forbidden(w http.ResponseWriter) {
-	r.Error(w, http.StatusForbidden, "forbidden", "forbidden")
-}
-
-func (r *Responder) ForbiddenMsg(w http.ResponseWriter, code, message string) {
-	r.Error(w, http.StatusForbidden, code, message)
-}
-
 func (r *Responder) PermissionDenied(w http.ResponseWriter) {
 	r.Error(w, http.StatusForbidden, "permission_denied", "permission denied")
 }
 
-func (r *Responder) Conflict(w http.ResponseWriter) {
-	r.Error(w, http.StatusConflict, "conflict", "resource conflict")
+func (r *Responder) Forbidden(w http.ResponseWriter, code, message string) {
+	r.Error(w, http.StatusForbidden, code, message)
 }
 
-func (r *Responder) ConflictMsg(w http.ResponseWriter, code, message string) {
+func (r *Responder) Conflict(w http.ResponseWriter, code, message string) {
 	r.Error(w, http.StatusConflict, code, message)
+}
+
+func (r *Responder) HandleServiceError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, errs.ErrNotFound):
+		r.NotFound(w, nil)
+
+	case errors.Is(err, errs.ErrBanned):
+		r.Forbidden(w, "banned", "you are banned from this community")
+
+	case errors.Is(err, errs.ErrNotMember):
+		r.Forbidden(w, "not_member", "you must join this community first")
+
+	case errors.Is(err, errs.ErrBlocked):
+		r.Forbidden(w, "blocked", "you are blocked by this user")
+
+	case errors.Is(err, errs.ErrSelfBan):
+		r.Forbidden(w, "self_ban", "you can't ban yourself")
+
+	case errors.Is(err, errs.ErrPermissionDenied):
+		r.PermissionDenied(w)
+
+	case errors.Is(err, errs.ErrDuplicateEmail):
+		r.Conflict(w, "duplicate_email", "email already in use")
+
+	case errors.Is(err, errs.ErrDuplicateCommunityName):
+		r.Conflict(w, "duplicate_community_name", "a community with that name already exists")
+
+	case errors.Is(err, errs.ErrDuplicateUsername):
+		r.Conflict(w, "duplicate_username", "username already taken")
+
+	case errors.Is(err, errs.ErrOwnershipTransferRequired):
+		r.Conflict(w, "ownership_transfer_required",
+			"transfer ownership before leaving the community")
+
+	default:
+		r.ServerError(w, err)
+	}
 }

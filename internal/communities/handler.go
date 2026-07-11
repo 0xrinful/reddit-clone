@@ -26,12 +26,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	community, err := h.service.GetViewByName(r.Context(), name)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrNotFound):
-			h.responder.NotFound(w, r)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -63,13 +58,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	community, err := h.service.Create(r.Context(), params)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrDuplicateCommunityName):
-			v.AddError("name", "community already exists")
-			h.responder.ValidationError(w, v.Errors)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -86,16 +75,10 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.Delete(r.Context(), name, user.ID)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrNotFound):
-			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrPermissionDenied):
-			h.responder.PermissionDenied(w)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -119,17 +102,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	p := UpdateParams(input)
 	community, err := h.service.Update(r.Context(), name, user.ID, p)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrNotFound):
-			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrPermissionDenied):
-			h.responder.PermissionDenied(w)
-		case errors.Is(err, errs.ErrDuplicateCommunityName):
-			v.AddError("name", "community name is already in use")
-			h.responder.ValidationError(w, v.Errors)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -155,7 +128,7 @@ func (h *Handler) Search(w http.ResponseWriter, r *http.Request) {
 
 	communities, err := h.service.Search(r.Context(), params)
 	if err != nil {
-		h.responder.ServerError(w, err)
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -180,7 +153,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	communities, err := h.service.List(r.Context(), params)
 	if err != nil {
-		h.responder.ServerError(w, err)
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
