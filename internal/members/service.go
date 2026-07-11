@@ -23,7 +23,6 @@ func NewService(membersRepo Repository) Service {
 }
 
 func (s *service) Join(ctx context.Context, communityID, userID int64) error {
-	// TODO: check ban state
 	return s.membersRepo.Create(ctx, communityID, userID, domain.RoleMember)
 }
 
