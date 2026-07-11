@@ -9,7 +9,7 @@ import (
 type Service interface {
 	Get(ctx context.Context, id int64) (*PostView, error)
 	Create(ctx context.Context, params CreateParams) (*Post, error)
-	Update(ctx context.Context, id, requesterID int64, p UpdateParams) (*Post, error)
+	Update(ctx context.Context, id, actorID int64, p UpdateParams) (*Post, error)
 	Delete(ctx context.Context, id, userID int64) error
 	List(ctx context.Context, params ListParams) ([]*PostSummary, error)
 }
@@ -42,7 +42,7 @@ func (s *service) Create(
 
 func (s *service) Update(
 	ctx context.Context,
-	id, requesterID int64,
+	id, actorID int64,
 	p UpdateParams,
 ) (*Post, error) {
 	post, err := s.repo.GetByID(ctx, id)
@@ -50,7 +50,7 @@ func (s *service) Update(
 		return nil, err
 	}
 
-	if post.UserID != requesterID {
+	if post.UserID != actorID {
 		return nil, errs.ErrPermissionDenied
 	}
 
@@ -61,13 +61,13 @@ func (s *service) Get(ctx context.Context, id int64) (*PostView, error) {
 	return s.repo.GetView(ctx, id)
 }
 
-func (s *service) Delete(ctx context.Context, id, requesterID int64) error {
+func (s *service) Delete(ctx context.Context, id, actorID int64) error {
 	post, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	if post.UserID != requesterID {
+	if post.UserID != actorID {
 		return errs.ErrPermissionDenied
 	}
 
