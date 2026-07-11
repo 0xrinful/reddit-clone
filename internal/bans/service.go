@@ -36,12 +36,14 @@ type service struct {
 
 func NewService(
 	txBeginner database.TxBeginner,
+	authz Authorizer,
 	bansRepo Repository,
 	membersRepo MembersRepo,
 	usersRepo UsersRepo,
 ) Service {
 	return &service{
 		txBeginner:  txBeginner,
+		authz:       authz,
 		bansRepo:    bansRepo,
 		membersRepo: membersRepo,
 		usersRepo:   usersRepo,

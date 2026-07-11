@@ -8,6 +8,11 @@ import (
 
 type Service interface {
 	CanBan(actor, target domain.Authority) bool
+	CanUnban(actor, target domain.Authority) bool
+
+	CanPost(ctx context.Context, communityID, userID int64) error
+	CanDeletePost(actorID, authorID int64) bool
+	CanModifyPost(actorID, authorID int64) bool
 }
 
 type MemberChecker interface {
