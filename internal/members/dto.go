@@ -12,9 +12,10 @@ type MemberDTO struct {
 }
 
 type MembershipDTO struct {
-	Member   MemberDTO `json:"user"`
-	Role     string    `json:"role"`
-	JoinedAt time.Time `json:"joined_at"`
+	Member      MemberDTO `json:"user"`
+	Role        string    `json:"role"`
+	Permissions int64     `json:"permissions"`
+	JoinedAt    time.Time `json:"joined_at"`
 }
 
 // mapping helpers
@@ -25,8 +26,9 @@ func toMembershipDTO(m *MembershipView) MembershipDTO {
 			Username:  m.Username,
 			AvatarUrl: m.AvatarUrl,
 		},
-		Role:     string(m.Role),
-		JoinedAt: m.JoinedAt,
+		Role:        string(m.Role),
+		Permissions: int64(m.Permissions),
+		JoinedAt:    m.JoinedAt,
 	}
 }
 

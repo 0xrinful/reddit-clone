@@ -40,7 +40,7 @@ func (r *postgresRepository) Get(
 	communityID, userID int64,
 ) (*Membership, error) {
 	query := `
-		SELECT community_id, user_id, role, joined_at
+		SELECT community_id, user_id, role, permissions, joined_at
 		FROM community_members
 		WHERE community_id = $1 AND user_id = $2`
 
@@ -106,7 +106,7 @@ func (r *postgresRepository) List(ctx context.Context, p ListParams) ([]*Members
 	cursor := p.Pagination.Cursor
 
 	q.Select(
-		"m.community_id, m.user_id, m.role, m.joined_at, u.username, u.avatar_url",
+		"m.community_id, m.user_id, m.role, m.permissions, m.joined_at, u.username, u.avatar_url",
 		"community_members m",
 	)
 	q.Join("users u on m.user_id = u.id")
@@ -148,7 +148,7 @@ func (r *postgresRepository) List(ctx context.Context, p ListParams) ([]*Members
 func scanMembership(row *sql.Row) (*Membership, error) {
 	var m Membership
 
-	err := row.Scan(&m.CommunityID, &m.UserID, &m.Role, &m.JoinedAt)
+	err := row.Scan(&m.CommunityID, &m.UserID, &m.Role, &m.Permissions, &m.JoinedAt)
 	if err != nil {
 		return nil, scanError(err)
 	}
@@ -160,7 +160,12 @@ func scanView(rows *sql.Rows) (*MembershipView, error) {
 	var m MembershipView
 	var avatarUrl sql.NullString
 
-	err := rows.Scan(&m.CommunityID, &m.UserID, &m.Role, &m.JoinedAt, &m.Username, &avatarUrl)
+	err := rows.Scan(
+		&m.CommunityID, &m.UserID,
+		&m.Role, &m.Permissions,
+		&m.JoinedAt, &m.Username,
+		&avatarUrl,
+	)
 	if err != nil {
 		return nil, err
 	}

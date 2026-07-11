@@ -16,6 +16,7 @@ type Membership struct {
 	UserID      int64
 	CommunityID int64
 	Role        domain.Role
+	Permissions domain.Permission
 	JoinedAt    time.Time
 }
 
