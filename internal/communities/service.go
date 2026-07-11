@@ -12,8 +12,8 @@ type Service interface {
 	GetByName(ctx context.Context, name string) (*Community, error)
 	GetViewByName(ctx context.Context, name string) (*CommunityView, error)
 	Create(ctx context.Context, p CreateParams) (*Community, error)
-	Delete(ctx context.Context, name string, requesterID int64) error
-	Update(ctx context.Context, name string, requesterID int64, p UpdateParams) (*Community, error)
+	Delete(ctx context.Context, name string, actorID int64) error
+	Update(ctx context.Context, name string, actorID int64, p UpdateParams) (*Community, error)
 	Search(ctx context.Context, p SearchParams) ([]*CommunitySummary, error)
 	List(ctx context.Context, p ListParams) ([]*CommunitySummary, error)
 }
@@ -78,13 +78,14 @@ func (s *service) Create(ctx context.Context, p CreateParams) (*Community, error
 	return c, nil
 }
 
-func (s *service) Delete(ctx context.Context, name string, requesterID int64) error {
+func (s *service) Delete(ctx context.Context, name string, actorID int64) error {
 	community, err := s.GetByName(ctx, name)
 	if err != nil {
 		return err
 	}
 
-	if community.OwnerID == nil || *community.OwnerID != requesterID {
+	// TODO: use GetAuthority
+	if community.OwnerID == nil || *community.OwnerID != actorID {
 		return errs.ErrPermissionDenied
 	}
 
@@ -94,7 +95,7 @@ func (s *service) Delete(ctx context.Context, name string, requesterID int64) er
 func (s *service) Update(
 	ctx context.Context,
 	name string,
-	requesterID int64,
+	actorID int64,
 	p UpdateParams,
 ) (*Community, error) {
 	community, err := s.communitiesRepo.GetByName(ctx, name)
@@ -103,7 +104,8 @@ func (s *service) Update(
 	}
 
 	// TODO: allow mods in the feature
-	if community.OwnerID == nil || *community.OwnerID != requesterID {
+	// TODO: Use GetAuthority
+	if community.OwnerID == nil || *community.OwnerID != actorID {
 		return nil, errs.ErrPermissionDenied
 	}
 

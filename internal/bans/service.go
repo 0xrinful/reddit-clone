@@ -9,12 +9,12 @@ import (
 )
 
 type Service interface {
-	Ban(ctx context.Context, requesterID int64, p CreateParams) error
-	Unban(ctx context.Context, requesterID int64, p DeleteParams) error
+	Ban(ctx context.Context, actorID int64, p CreateParams) error
+	Unban(ctx context.Context, actorID int64, p DeleteParams) error
 }
 
 type MembersRepo interface {
-	GetRole(ctx context.Context, communityID, userID int64) (domain.Role, error)
+	GetAuthority(ctx context.Context, communityID, userID int64) (domain.Authority, error)
 }
 
 type UsersRepo interface {
@@ -42,7 +42,7 @@ func NewService(
 	}
 }
 
-func (s *service) Ban(ctx context.Context, requesterID int64, p CreateParams) error {
+func (s *service) Ban(ctx context.Context, actorID int64, p CreateParams) error {
 	tx, err := s.txBeginner.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -50,12 +50,12 @@ func (s *service) Ban(ctx context.Context, requesterID int64, p CreateParams) er
 	defer tx.Rollback()
 	ctxTx := database.WithTx(ctx, tx)
 
-	requesterRole, err := s.membersRepo.GetRole(ctxTx, p.CommunityID, requesterID)
+	actorAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, actorID)
 	if err != nil {
 		return err
 	}
 
-	if !requesterRole.IsOwner() && !requesterRole.IsModerator() {
+	if !actorAuthority.Can(domain.PermBanUsers) {
 		return errs.ErrPermissionDenied
 	}
 
@@ -64,23 +64,23 @@ func (s *service) Ban(ctx context.Context, requesterID int64, p CreateParams) er
 		return err
 	}
 
-	if requesterID == targetID {
+	if actorID == targetID {
 		return errs.ErrSelfBan
 	}
 
-	targetRole, err := s.membersRepo.GetRole(ctxTx, p.CommunityID, targetID)
+	targetAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, targetID)
 	if err != nil {
 		return err
 	}
 
-	if !requesterRole.CanManageBan(targetRole) {
+	if !actorAuthority.CanActOn(targetAuthority) {
 		return errs.ErrPermissionDenied
 	}
 
 	b := &BanRecord{
 		CommunityID: p.CommunityID,
 		UserID:      targetID,
-		BannedBy:    &requesterID,
+		BannedBy:    &actorID,
 		Reason:      p.Reason,
 		ExpiresAt:   p.Duration.Expiry(),
 	}
@@ -92,7 +92,7 @@ func (s *service) Ban(ctx context.Context, requesterID int64, p CreateParams) er
 	return tx.Commit()
 }
 
-func (s *service) Unban(ctx context.Context, requesterID int64, p DeleteParams) error {
+func (s *service) Unban(ctx context.Context, actorID int64, p DeleteParams) error {
 	tx, err := s.txBeginner.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -100,12 +100,12 @@ func (s *service) Unban(ctx context.Context, requesterID int64, p DeleteParams) 
 	defer tx.Rollback()
 	ctxTx := database.WithTx(ctx, tx)
 
-	requesterRole, err := s.membersRepo.GetRole(ctxTx, p.CommunityID, requesterID)
+	actorAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, actorID)
 	if err != nil {
 		return err
 	}
 
-	if !requesterRole.IsOwner() && !requesterRole.IsModerator() {
+	if !actorAuthority.Can(domain.PermBanUsers) {
 		return errs.ErrPermissionDenied
 	}
 
@@ -114,12 +114,12 @@ func (s *service) Unban(ctx context.Context, requesterID int64, p DeleteParams) 
 		return err
 	}
 
-	targetRole, err := s.membersRepo.GetRole(ctxTx, p.CommunityID, targetID)
+	targetAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, targetID)
 	if err != nil {
 		return err
 	}
 
-	if !requesterRole.CanManageBan(targetRole) {
+	if !actorAuthority.CanActOn(targetAuthority) {
 		return errs.ErrPermissionDenied
 	}
 

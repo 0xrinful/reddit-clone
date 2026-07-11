@@ -16,17 +16,6 @@ func (r Role) IsModerator() bool {
 	return r == RoleModerator
 }
 
-func (r Role) IsUser() bool {
+func (r Role) IsMember() bool {
 	return r == RoleMember
-}
-
-func (r Role) CanManageBan(target Role) bool {
-	switch r {
-	case RoleOwner:
-		return target != RoleOwner
-	case RoleModerator:
-		return target == RoleMember
-	default:
-		return false
-	}
 }
