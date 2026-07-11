@@ -46,18 +46,10 @@ func (h *Handler) Ban(w http.ResponseWriter, r *http.Request) {
 
 	err = h.service.Ban(r.Context(), user.ID, params)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrNotFound):
-			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrPermissionDenied):
-			h.responder.PermissionDenied(w)
-		case errors.Is(err, errs.ErrSelfBan):
-			h.responder.ForbiddenMsg(w, "self_ban", "can't ban self")
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -72,15 +64,9 @@ func (h *Handler) Unban(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.Unban(r.Context(), user.ID, params)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrNotFound):
-			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrPermissionDenied):
-			h.responder.Forbidden(w)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 }

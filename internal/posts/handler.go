@@ -32,12 +32,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	post, err := h.service.Get(r.Context(), id)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrNotFound):
-			h.responder.NotFound(w, r)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -74,7 +69,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	post, err := h.service.Create(r.Context(), params)
 	if err != nil {
-		h.responder.ServerError(w, err)
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -111,14 +106,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	post, err := h.service.Update(r.Context(), id, user.ID, params)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrNotFound):
-			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrPermissionDenied):
-			h.responder.PermissionDenied(w)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -137,14 +125,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err = h.service.Delete(r.Context(), id, user.ID)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrNotFound):
-			h.responder.NotFound(w, r)
-		case errors.Is(err, errs.ErrPermissionDenied):
-			h.responder.PermissionDenied(w)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -176,7 +157,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	posts, err := h.service.List(r.Context(), params)
 	if err != nil {
-		h.responder.ServerError(w, err)
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 

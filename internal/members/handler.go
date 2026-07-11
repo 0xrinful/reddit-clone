@@ -26,10 +26,7 @@ func (h *Handler) Join(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.Join(r.Context(), community.ID, user.ID)
 	if err != nil {
-		switch {
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -42,15 +39,7 @@ func (h *Handler) Leave(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.Leave(r.Context(), community.ID, user.ID)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrOwnershipTransferRequired):
-			h.responder.ConflictMsg(w,
-				"ownership_transfer_required",
-				"transfer ownership before leaving the community",
-			)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -78,7 +67,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	memberships, err := h.service.List(r.Context(), params)
 	if err != nil {
-		h.responder.ServerError(w, err)
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
