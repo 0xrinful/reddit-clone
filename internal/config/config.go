@@ -12,6 +12,7 @@ type Config struct {
 	Limiter LimiterConfig
 	SMTP    SMTPConfig
 	JWT     JWTConfig
+	Logging LoggingConfig
 }
 
 type DBConfig struct {
@@ -37,6 +38,10 @@ type SMTPConfig struct {
 
 type LimiterConfig struct {
 	Enabled bool
+}
+
+type LoggingConfig struct {
+	RequestLogging bool
 }
 
 func Load() Config {
@@ -68,6 +73,8 @@ func Load() Config {
 	flag.StringVar(&cfg.JWT.Secret, "jwt-secret", os.Getenv("JWT_SECRET"), "JWT Secret")
 	cfg.JWT.RefreshTokenTTL = 30 * 24 * time.Hour
 	cfg.JWT.AccessTokenTTL = 30 * time.Minute
+
+	flag.BoolVar(&cfg.Logging.RequestLogging, "log-requests", false, "enable HTTP request logging")
 
 	flag.Parse()
 	return cfg

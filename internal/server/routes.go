@@ -12,6 +12,7 @@ import (
 func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 	r := rush.New()
 	m := middleware.New(responder, s.cfg)
+	r.Use(m.Logger)
 	r.Use(m.Recover)
 	r.Use(m.Authenticate(s.tokensSvc))
 
