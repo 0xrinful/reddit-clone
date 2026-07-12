@@ -7,19 +7,18 @@ import (
 )
 
 type Worker struct {
-	wg     sync.WaitGroup
-	logger *slog.Logger
+	wg sync.WaitGroup
 }
 
-func New(logger *slog.Logger) *Worker {
-	return &Worker{logger: logger}
+func New() *Worker {
+	return &Worker{}
 }
 
 func (w *Worker) Run(fn func()) {
 	w.wg.Go(func() {
 		defer func() {
 			if err := recover(); err != nil {
-				w.logger.Error("background task panic", "error", fmt.Sprintf("%v", err))
+				slog.Error("background task panic", "error", fmt.Sprintf("%v", err))
 			}
 		}()
 

@@ -26,7 +26,6 @@ func NewService(
 	userRepo users.Repository,
 	tokenRepo tokens.Repository,
 	mailer *mailer.Mailer,
-	logger *slog.Logger,
 	background *background.Worker,
 ) *service {
 	return &service{
@@ -34,7 +33,6 @@ func NewService(
 		userRepo:   userRepo,
 		tokenRepo:  tokenRepo,
 		mailer:     mailer,
-		logger:     logger,
 		background: background,
 	}
 }
@@ -44,7 +42,6 @@ type service struct {
 	userRepo   users.Repository
 	tokenRepo  tokens.Repository
 	mailer     *mailer.Mailer
-	logger     *slog.Logger
 	background *background.Worker
 }
 
@@ -115,7 +112,7 @@ func (s *service) ActivateUser(ctx context.Context, plaintext string) error {
 	}
 
 	if err = s.tokenRepo.DeleteAllForUser(ctx, tokens.ScopeActivation, token.UserID); err != nil {
-		s.logger.Error("failed to delete activation tokens", "userID", token.UserID, "error", err)
+		slog.Error("failed to delete activation tokens", "userID", token.UserID, "error", err)
 	}
 
 	return nil
@@ -169,7 +166,7 @@ func (s *service) deliverActivationEmail(userID int64, email, username, plaintex
 		"ActivationURL": "https://app.com/verify?token=" + plaintext, // TODO: update url
 	})
 	if err != nil {
-		s.logger.Error("activation email failed", "userID", userID, "error", err)
+		slog.Error("activation email failed", "userID", userID, "error", err)
 	}
 }
 

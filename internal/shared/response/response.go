@@ -14,18 +14,16 @@ import (
 
 type envelope map[string]any
 
-type Responder struct {
-	logger *slog.Logger
-}
+type Responder struct{}
 
-func NewResponder(logger *slog.Logger) *Responder {
-	return &Responder{logger}
+func NewResponder() *Responder {
+	return &Responder{}
 }
 
 func (r *Responder) JSON(w http.ResponseWriter, status int, data any, headers ...http.Header) {
 	js, err := json.Marshal(data)
 	if err != nil {
-		r.logger.Error("json marshal failed", "err", err)
+		slog.Error("json marshal failed", "err", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(`{"error":"internal server error","code":"internal_error"}` + "\n"))
@@ -57,7 +55,7 @@ func (r *Responder) MethodNotAllowed(w http.ResponseWriter, rq *http.Request) {
 }
 
 func (r *Responder) ServerError(w http.ResponseWriter, err error) {
-	r.logger.Error("internal server error", "err", err)
+	slog.Error("internal server error", "err", err)
 	r.Error(w, http.StatusInternalServerError, "internal_error", "internal server error")
 }
 

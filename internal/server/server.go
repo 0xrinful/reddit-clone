@@ -21,7 +21,6 @@ import (
 
 type Server struct {
 	cfg        config.Config
-	logger     *slog.Logger
 	httpServer *http.Server
 	bg         *background.Worker
 
@@ -40,7 +39,6 @@ type Server struct {
 
 func New(
 	cfg config.Config,
-	logger *slog.Logger,
 	bg *background.Worker,
 	communitiesSvc communities.Service,
 	postsSvc posts.Service,
@@ -50,7 +48,7 @@ func New(
 	membersSvc members.Service,
 	bansSvc bans.Service,
 ) *Server {
-	responder := response.NewResponder(logger)
+	responder := response.NewResponder()
 
 	postsHandler := posts.NewHandler(postsSvc, responder)
 	communitiesHandler := communities.NewHandler(communitiesSvc, responder)
@@ -60,9 +58,8 @@ func New(
 	bansHandler := bans.NewHandler(bansSvc, responder)
 
 	server := &Server{
-		cfg:    cfg,
-		logger: logger,
-		bg:     bg,
+		cfg: cfg,
+		bg:  bg,
 
 		communitiesSvc: communitiesSvc,
 		tokensSvc:      tokensSvc,
@@ -78,7 +75,7 @@ func New(
 	router := server.setupRoutes(responder)
 
 	// bridge slog → *log.Logger for http.Server
-	errLog := slog.NewLogLogger(logger.Handler(), slog.LevelError)
+	errLog := slog.NewLogLogger(slog.Default().Handler(), slog.LevelError)
 
 	server.httpServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
@@ -93,7 +90,7 @@ func New(
 }
 
 func (s *Server) Start() error {
-	s.logger.Info("server starting", "addr", s.httpServer.Addr)
+	slog.Info("server starting", "addr", s.httpServer.Addr)
 	return s.httpServer.ListenAndServe()
 }
 
@@ -102,8 +99,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 		return err
 	}
 
-	s.logger.Info("waiting for background tasks to finish...")
+	slog.Info("waiting for background tasks to finish...")
 	s.bg.Wait()
-	s.logger.Info("all tasks finished, exiting")
+	slog.Info("all tasks finished, exiting")
 	return nil
 }

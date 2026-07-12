@@ -42,40 +42,55 @@ type LimiterConfig struct {
 
 type LoggingConfig struct {
 	RequestLogging bool
+	IsProduction   bool
 }
 
 func Load() Config {
 	var cfg Config
 
 	flag.IntVar(&cfg.Port, "port", 8000, "server port")
-	flag.StringVar(&cfg.DB.DSN, "db-dsn", os.Getenv("DB_DSN"), "PostgreSQL DSN")
-	flag.IntVar(&cfg.DB.MaxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
-	flag.IntVar(&cfg.DB.MaxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
-	flag.StringVar(
-		&cfg.DB.MaxIdleTime,
-		"db-mDB-idle-time",
-		"15m",
-		"PostgreSQL max connection idle time",
-	)
-	flag.BoolVar(&cfg.Limiter.Enabled, "limiter-enabled", true, "Enable rate limiter")
 
-	flag.StringVar(&cfg.SMTP.Host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
-	flag.IntVar(&cfg.SMTP.Port, "smtp-port", 587, "SMTP port")
-	flag.StringVar(&cfg.SMTP.Username, "smtp-username", "17e7914803f235", "SMTP username")
-	flag.StringVar(&cfg.SMTP.Password, "smtp-password", "afef433d663144", "SMTP password")
+	cfg.DB.flags()
+	cfg.Limiter.flags()
+	cfg.SMTP.flags()
+	cfg.JWT.flags()
+	cfg.Logging.flags()
+
+	flag.Parse()
+	return cfg
+}
+
+func (db *DBConfig) flags() {
+	flag.StringVar(&db.DSN, "db-dsn", os.Getenv("DB_DSN"), "Postgres DSN")
+	flag.IntVar(&db.MaxOpenConns, "db-max-open-conns", 25, "Postgres max open connections")
+	flag.IntVar(&db.MaxIdleConns, "db-max-idle-conns", 25, "Postgres max idle connections")
+	flag.StringVar(&db.MaxIdleTime, "db-max-idle-time", "15m", "Postgres max connection idle time")
+}
+
+func (l *LimiterConfig) flags() {
+	flag.BoolVar(&l.Enabled, "limiter-enabled", true, "Enable rate limiter")
+}
+
+func (s *SMTPConfig) flags() {
+	flag.StringVar(&s.Host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&s.Port, "smtp-port", 587, "SMTP port")
+	flag.StringVar(&s.Username, "smtp-username", "17e7914803f235", "SMTP username")
+	flag.StringVar(&s.Password, "smtp-password", "afef433d663144", "SMTP password")
 	flag.StringVar(
-		&cfg.SMTP.Sender,
+		&s.Sender,
 		"smtp-sender",
 		"Reddit-Clone <no-reply@reddit-clone.com>",
 		"SMTP sender",
 	)
+}
 
-	flag.StringVar(&cfg.JWT.Secret, "jwt-secret", os.Getenv("JWT_SECRET"), "JWT Secret")
-	cfg.JWT.RefreshTokenTTL = 30 * 24 * time.Hour
-	cfg.JWT.AccessTokenTTL = 30 * time.Minute
+func (j *JWTConfig) flags() {
+	flag.StringVar(&j.Secret, "jwt-secret", os.Getenv("JWT_SECRET"), "JWT Secret")
+	j.RefreshTokenTTL = 30 * 24 * time.Hour
+	j.AccessTokenTTL = 30 * time.Minute
+}
 
-	flag.BoolVar(&cfg.Logging.RequestLogging, "log-requests", false, "enable HTTP request logging")
-
-	flag.Parse()
-	return cfg
+func (l *LoggingConfig) flags() {
+	flag.BoolVar(&l.RequestLogging, "log-requests", true, "enable HTTP request logging")
+	flag.BoolVar(&l.IsProduction, "log-prod", false, "switch output format to production JSON")
 }

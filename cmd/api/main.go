@@ -10,8 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/joho/godotenv"
-
 	"github.com/0xrinful/reddit-clone/internal/auth"
 	"github.com/0xrinful/reddit-clone/internal/authorization"
 	"github.com/0xrinful/reddit-clone/internal/bans"
@@ -22,30 +20,29 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/posts"
 	"github.com/0xrinful/reddit-clone/internal/server"
 	"github.com/0xrinful/reddit-clone/internal/shared/background"
+	"github.com/0xrinful/reddit-clone/internal/shared/logger"
 	"github.com/0xrinful/reddit-clone/internal/shared/mailer"
 	"github.com/0xrinful/reddit-clone/internal/tokens"
 	"github.com/0xrinful/reddit-clone/internal/users"
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-
-	if err := godotenv.Load(); err != nil {
-		logger.Warn("no .env file loaded", "err", err)
-	}
-
 	cfg := config.Load()
+
+	logger := logger.New(cfg.Logging)
+	slog.SetDefault(logger)
+
 	mailer := mailer.New(cfg.SMTP)
-	bg := background.New(logger)
+	bg := background.New()
 
 	db, err := database.Open(cfg.DB)
 	if err != nil {
-		logger.Error("db connection failed", "err", err)
+		slog.Error("db connection failed", "err", err)
 		os.Exit(1)
 	}
 	defer db.Close()
 
-	logger.Info("database connection pool established")
+	slog.Info("database connection pool established")
 
 	communitiesRepo := communities.NewRepository(db)
 	postsRepo := posts.NewRepository(db)
@@ -58,13 +55,13 @@ func main() {
 	communitiesSvc := communities.NewService(db, authzSvc, communitiesRepo, membersRepo)
 	postsSvc := posts.NewService(authzSvc, postsRepo)
 	usersSvc := users.NewService(usersRepo)
-	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)
+	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, bg)
 	tokensSvc := tokens.NewService(db, tokensRepo, cfg.JWT)
 	membersSvc := members.NewService(membersRepo)
 	bansSvc := bans.NewService(db, authzSvc, bansRepo, membersRepo, usersRepo)
 
 	srv := server.New(
-		cfg, logger, bg,
+		cfg, bg,
 		communitiesSvc,
 		postsSvc, usersSvc, authSvc,
 		tokensSvc, membersSvc, bansSvc,
@@ -83,25 +80,25 @@ func main() {
 	case err := <-errCh:
 		// server crashed unexpectedly
 		if !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("server error", "err", err)
+			slog.Error("server error", "err", err)
 		}
 
 	case <-ctx.Done():
-		logger.Info("shutting down...")
+		slog.Info("shutting down...")
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {
-			logger.Error("shutdown error", "err", err)
+			slog.Error("shutdown error", "err", err)
 		}
 
 		// wait for ListenAndServe to return
 		err := <-errCh
 		if !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("server error", "err", err)
+			slog.Error("server error", "err", err)
 		}
 	}
 
-	logger.Info("server stopped")
+	slog.Info("server stopped")
 }
