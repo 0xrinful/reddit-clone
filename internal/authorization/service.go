@@ -7,8 +7,8 @@ import (
 )
 
 type Service interface {
-	CanBan(actor, target domain.Authority) bool
-	CanUnban(actor, target domain.Authority) bool
+	CanBan(ctx context.Context, communityID, actorID, targetID int64) error
+	CanUnban(ctx context.Context, communityID, actorID, targetID int64) error
 
 	CanPost(ctx context.Context, communityID, userID int64) error
 	CanUpdatePost(actorID, authorID int64) bool

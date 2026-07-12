@@ -55,7 +55,7 @@ func main() {
 	bansRepo := bans.NewRepository(db)
 
 	authzSvc := authorization.NewService(bansRepo, membersRepo)
-	communitiesSvc := communities.NewService(db, communitiesRepo, membersRepo)
+	communitiesSvc := communities.NewService(db, authzSvc, communitiesRepo, membersRepo)
 	postsSvc := posts.NewService(authzSvc, postsRepo)
 	usersSvc := users.NewService(usersRepo)
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, logger, bg)

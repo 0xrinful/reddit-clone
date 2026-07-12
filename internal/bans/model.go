@@ -5,7 +5,7 @@ import "time"
 type BanDuration int
 
 const (
-	BanPermanent BanDuration = iota
+	BanPermanent BanDuration = iota + 1
 	BanDay
 	BanThreeDays
 	BanWeek

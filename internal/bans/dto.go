@@ -12,6 +12,7 @@ type CreateRequest struct {
 }
 
 func (c CreateRequest) Validate(v *validator.Validator) {
+	v.Check(c.Username != "", "username", "must not be empty")
 	v.Check(BanDuration(c.Duration).Valid(), "duration", "invalid ban duration")
 	v.Check(c.Reason != "", "reason", "must not be empty")
 }

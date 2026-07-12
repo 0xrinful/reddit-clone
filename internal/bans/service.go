@@ -5,7 +5,6 @@ import (
 
 	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/domain"
-	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
 type Service interface {
@@ -14,8 +13,8 @@ type Service interface {
 }
 
 type Authorizer interface {
-	CanBan(actor, target domain.Authority) bool
-	CanUnban(actor, target domain.Authority) bool
+	CanBan(ctx context.Context, communityID, actorID, targetID int64) error
+	CanUnban(ctx context.Context, communityID, actorID, targetID int64) error
 }
 
 type MembersRepo interface {
@@ -63,22 +62,8 @@ func (s *service) Ban(ctx context.Context, actorID int64, p CreateParams) error 
 		return err
 	}
 
-	actorAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, actorID)
-	if err != nil {
+	if err := s.authz.CanBan(ctxTx, p.CommunityID, actorID, targetID); err != nil {
 		return err
-	}
-
-	targetAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, targetID)
-	if err != nil {
-		return err
-	}
-
-	if !s.authz.CanBan(actorAuthority, targetAuthority) {
-		return errs.ErrPermissionDenied
-	}
-
-	if actorID == targetID {
-		return errs.ErrSelfBan
 	}
 
 	b := &BanRecord{
@@ -109,18 +94,8 @@ func (s *service) Unban(ctx context.Context, actorID int64, p DeleteParams) erro
 		return err
 	}
 
-	actorAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, actorID)
-	if err != nil {
+	if err := s.authz.CanUnban(ctxTx, p.CommunityID, actorID, targetID); err != nil {
 		return err
-	}
-
-	targetAuthority, err := s.membersRepo.GetAuthority(ctxTx, p.CommunityID, targetID)
-	if err != nil {
-		return err
-	}
-
-	if !s.authz.CanUnban(actorAuthority, targetAuthority) {
-		return errs.ErrPermissionDenied
 	}
 
 	err = s.bansRepo.Delete(ctxTx, p.CommunityID, targetID)

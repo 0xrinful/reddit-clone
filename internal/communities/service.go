@@ -5,7 +5,6 @@ import (
 
 	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/domain"
-	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
 type Service interface {
