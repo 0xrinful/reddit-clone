@@ -22,19 +22,27 @@ type MembersRepo interface {
 	Create(ctx context.Context, communityID, userID int64, role domain.Role) error
 }
 
+type Authorizer interface {
+	CanUpdateCommunity(ctx context.Context, communityID, actorID int64) error
+	CanDeleteCommunity(ctx context.Context, communityID, actorID int64) error
+}
+
 type service struct {
 	txBeginner      database.TxBeginner
+	authz           Authorizer
 	communitiesRepo Repository
 	membersRepo     MembersRepo
 }
 
 func NewService(
 	txBeginner database.TxBeginner,
+	authz Authorizer,
 	communitiesRepo Repository,
 	membersRepo MembersRepo,
 ) Service {
 	return &service{
 		txBeginner:      txBeginner,
+		authz:           authz,
 		communitiesRepo: communitiesRepo,
 		membersRepo:     membersRepo,
 	}
@@ -84,9 +92,8 @@ func (s *service) Delete(ctx context.Context, name string, actorID int64) error 
 		return err
 	}
 
-	// TODO: use GetAuthority
-	if community.OwnerID == nil || *community.OwnerID != actorID {
-		return errs.ErrPermissionDenied
+	if err := s.authz.CanDeleteCommunity(ctx, community.ID, actorID); err != nil {
+		return err
 	}
 
 	return s.communitiesRepo.Delete(ctx, community.ID)
@@ -103,10 +110,8 @@ func (s *service) Update(
 		return nil, err
 	}
 
-	// TODO: allow mods in the feature
-	// TODO: Use GetAuthority
-	if community.OwnerID == nil || *community.OwnerID != actorID {
-		return nil, errs.ErrPermissionDenied
+	if err := s.authz.CanUpdateCommunity(ctx, community.ID, actorID); err != nil {
+		return nil, err
 	}
 
 	return s.communitiesRepo.Update(ctx, community.ID, p)

@@ -11,8 +11,11 @@ type Service interface {
 	CanUnban(actor, target domain.Authority) bool
 
 	CanPost(ctx context.Context, communityID, userID int64) error
+	CanUpdatePost(actorID, authorID int64) bool
 	CanDeletePost(actorID, authorID int64) bool
-	CanModifyPost(actorID, authorID int64) bool
+
+	CanUpdateCommunity(ctx context.Context, communityID, actorID int64) error
+	CanDeleteCommunity(ctx context.Context, communityID, actorID int64) error
 }
 
 type MemberChecker interface {

@@ -32,6 +32,6 @@ func (s *service) CanDeletePost(actorID, authorID int64) bool {
 	return actorID == authorID
 }
 
-func (s *service) CanModifyPost(actorID, authorID int64) bool {
+func (s *service) CanUpdatePost(actorID, authorID int64) bool {
 	return actorID == authorID
 }
