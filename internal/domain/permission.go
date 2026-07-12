@@ -3,9 +3,10 @@ package domain
 type Permission int64
 
 const (
-	PermBanUsers Permission = 1 << iota
+	PermRemovePosts Permission = 1 << iota
+	PermBanUsers
 	PermManageModerators
-	PermDeletePosts
+	PermManageCommunity
 )
 
 func (p Permission) Has(target Permission) bool {

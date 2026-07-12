@@ -17,7 +17,7 @@ type Service interface {
 type Authorizer interface {
 	CanPost(ctx context.Context, communityID, userID int64) error
 	CanDeletePost(actorID, authorID int64) bool
-	CanModifyPost(actorID, authorID int64) bool
+	CanUpdatePost(actorID, authorID int64) bool
 }
 
 type service struct {
@@ -54,7 +54,7 @@ func (s *service) Update(ctx context.Context, id, actorID int64, p UpdateParams)
 		return nil, err
 	}
 
-	if !s.authz.CanModifyPost(actorID, post.UserID) {
+	if !s.authz.CanUpdatePost(actorID, post.UserID) {
 		return nil, errs.ErrPermissionDenied
 	}
 
