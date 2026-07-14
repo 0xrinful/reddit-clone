@@ -37,7 +37,7 @@ func (r *postgresRepository) IsBanned(
 ) (bool, error) {
 	query := `
 		SELECT EXISTS (
-			SELECT 1 FROM bans WHERE community_id = $1 AND user_id = $2
+			SELECT 1 FROM community_bans WHERE community_id = $1 AND user_id = $2
 		)`
 
 	var banned bool
@@ -55,7 +55,7 @@ func (r *postgresRepository) IsBanned(
 
 func (r *postgresRepository) Create(ctx context.Context, b *BanRecord) error {
 	query := `
-		INSERT INTO bans (community_id, user_id, banned_by, reason, expires_at)
+		INSERT INTO community_bans (community_id, user_id, banned_by, reason, expires_at)
 		VALUES($1, $2, $3, $4, $5)
 		ON CONFLICT (community_id, user_id) DO NOTHING`
 
@@ -69,7 +69,7 @@ func (r *postgresRepository) Create(ctx context.Context, b *BanRecord) error {
 }
 
 func (r *postgresRepository) Delete(ctx context.Context, communityID, userID int64) error {
-	query := `DELETE FROM bans WHERE community_id = $1 AND user_id = $2`
+	query := `DELETE FROM community_bans WHERE community_id = $1 AND user_id = $2`
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -85,7 +85,7 @@ func (r *postgresRepository) List(ctx context.Context, p ListParams) ([]*BanView
 	q.Select(
 		`b.community_id, b.user_id, b.banned_by, b.reason, b.created_at, 
 	  b.expires_at, u.username, u.avatar_url, bu.username, bu.avatar_url`,
-		"bans b",
+		"community_bans b",
 	)
 	q.Join("users u on b.user_id = u.id")
 	q.LeftJoin("users bu on b.banned_by = bu.id")

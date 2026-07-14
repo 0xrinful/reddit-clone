@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS bans;
+DROP TABLE IF EXISTS community_bans;
