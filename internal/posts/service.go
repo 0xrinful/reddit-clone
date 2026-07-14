@@ -14,8 +14,8 @@ type Service interface {
 
 type Authorizer interface {
 	CanPost(ctx context.Context, communityID, userID int64) error
+	CanUpdatePost(ctx context.Context, communityID, actorID, authorID int64) error
 	CanDeletePost(actorID, authorID int64) error
-	CanUpdatePost(actorID, authorID int64) error
 }
 
 type service struct {
@@ -52,7 +52,7 @@ func (s *service) Update(ctx context.Context, id, actorID int64, p UpdateParams)
 		return nil, err
 	}
 
-	if err := s.authz.CanUpdatePost(actorID, post.UserID); err != nil {
+	if err := s.authz.CanUpdatePost(ctx, post.CommunityID, actorID, post.UserID); err != nil {
 		return nil, err
 	}
 

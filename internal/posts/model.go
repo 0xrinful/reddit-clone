@@ -3,6 +3,7 @@ package posts
 import (
 	"time"
 
+	"github.com/0xrinful/reddit-clone/internal/domain"
 	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
 )
 
@@ -12,6 +13,7 @@ type Post struct {
 	Body        string
 	UserID      int64
 	CommunityID int64
+	Status      domain.PostStatus
 	Views       int64
 	Score       int64
 	CreatedAt   time.Time

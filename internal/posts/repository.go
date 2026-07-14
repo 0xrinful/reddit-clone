@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/database"
+	"github.com/0xrinful/reddit-clone/internal/domain"
 	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/query"
 )
@@ -18,6 +19,8 @@ type Repository interface {
 	Update(ctx context.Context, id int64, p UpdateParams) (*Post, error)
 	Delete(ctx context.Context, id int64) error
 	List(ctx context.Context, params ListParams) ([]*PostSummary, error)
+	UpdateStatusByUser(ctx context.Context, userID, communityID int64,
+		from, to domain.PostStatus) error
 }
 
 func NewRepository(db database.DB) Repository {
@@ -38,7 +41,7 @@ func (r *postgresRepository) db(ctx context.Context) database.DB {
 func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, error) {
 	query := `
 		SELECT 
-			p.id, p.title, p.body, p.user_id, p.community_id, p.views, p.score, p.created_at 
+			p.id, p.title, p.body, p.user_id, p.community_id, p.status, p.views, p.score, p.created_at 
 		FROM posts p 
 		WHERE p.id = $1`
 
@@ -152,6 +155,22 @@ func (r *postgresRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+func (r *postgresRepository) UpdateStatusByUser(
+	ctx context.Context,
+	userID, communityID int64,
+	from, to domain.PostStatus,
+) error {
+	query := `
+		UPDATE posts SET status = $4
+		WHERE user_id = $1 AND community_id = $2 AND status = $3`
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	_, err := r.db(ctx).ExecContext(ctx, query, userID, communityID, from, to)
+	return err
+}
+
 func (r *postgresRepository) List(
 	ctx context.Context,
 	params ListParams,
@@ -164,6 +183,7 @@ func (r *postgresRepository) List(
 	q.Join("users u ON p.user_id = u.id")
 
 	q.Where("p.community_id = ?", params.CommunityID)
+	q.Where("p.status = ?", domain.PostStatusActive)
 
 	switch params.Sort {
 	case SortByNew:
@@ -218,7 +238,7 @@ func scanPost(row *sql.Row) (*Post, error) {
 
 	err := row.Scan(
 		&p.ID, &p.Title, &p.Body, &p.UserID, &p.CommunityID,
-		&p.Views, &p.Score, &p.CreatedAt,
+		&p.Status, &p.Views, &p.Score, &p.CreatedAt,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {

@@ -35,9 +35,19 @@ func (s *service) CanDeletePost(actorID, authorID int64) error {
 	return nil
 }
 
-func (s *service) CanUpdatePost(actorID, authorID int64) error {
+func (s *service) CanUpdatePost(ctx context.Context, communityID, actorID, authorID int64) error {
 	if actorID != authorID {
 		return errs.ErrPermissionDenied
 	}
+
+	banned, err := s.bans.IsBanned(ctx, communityID, authorID)
+	if err != nil {
+		return err
+	}
+
+	if banned {
+		return errs.ErrBanned
+	}
+
 	return nil
 }

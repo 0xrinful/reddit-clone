@@ -58,7 +58,8 @@ type PostPublicDTO struct {
 
 type PostOwnerDTO struct {
 	PostPublicDTO
-	Views int64 `json:"views"`
+	Status string `json:"status"`
+	Views  int64  `json:"views"`
 }
 
 type PostSummaryDTO struct {
@@ -102,6 +103,7 @@ func toPostPublicDTO(p *PostView) PostPublicDTO {
 func toPostOwnerDTO(p *PostView) PostOwnerDTO {
 	return PostOwnerDTO{
 		PostPublicDTO: toPostPublicDTO(p),
+		Status:        string(p.Status),
 		Views:         p.Views,
 	}
 }

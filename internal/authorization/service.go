@@ -12,7 +12,7 @@ type Service interface {
 	CanViewBans(ctx context.Context, communityID, actorID int64) error
 
 	CanPost(ctx context.Context, communityID, userID int64) error
-	CanUpdatePost(actorID, authorID int64) error
+	CanUpdatePost(ctx context.Context, communityID, actorID, authorID int64) error
 	CanDeletePost(actorID, authorID int64) error
 
 	CanUpdateCommunity(ctx context.Context, communityID, actorID int64) error

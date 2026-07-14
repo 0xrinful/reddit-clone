@@ -43,7 +43,7 @@ db/migrations/up: confirm
 
 ## db/migrations/down: apply all down database migrations
 .PHONY: db/migrations/down
-db/migrations/down: confirm
+db/migrations/down:
 	@echo 'Running down migrations...'
 	migrate -path ./migrations -database ${DB_DSN} down
 
