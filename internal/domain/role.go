@@ -19,3 +19,20 @@ func (r Role) IsModerator() bool {
 func (r Role) IsMember() bool {
 	return r == RoleMember
 }
+
+func (r Role) Level() int {
+	switch r {
+	case RoleMember:
+		return 1
+	case RoleModerator:
+		return 2
+	case RoleOwner:
+		return 3
+	default:
+		return 0
+	}
+}
+
+func (r Role) AtLeast(role Role) bool {
+	return r.Level() >= role.Level()
+}

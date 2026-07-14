@@ -4,21 +4,18 @@ import (
 	"context"
 
 	"github.com/0xrinful/reddit-clone/internal/database"
-	"github.com/0xrinful/reddit-clone/internal/domain"
 )
 
 type Service interface {
 	Ban(ctx context.Context, actorID int64, p CreateParams) error
 	Unban(ctx context.Context, actorID int64, p DeleteParams) error
+	List(ctx context.Context, actorID int64, p ListParams) ([]*BanView, error)
 }
 
 type Authorizer interface {
 	CanBan(ctx context.Context, communityID, actorID, targetID int64) error
 	CanUnban(ctx context.Context, communityID, actorID, targetID int64) error
-}
-
-type MembersRepo interface {
-	GetAuthority(ctx context.Context, communityID, userID int64) (domain.Authority, error)
+	CanViewBans(ctx context.Context, communityID, actorID int64) error
 }
 
 type UsersRepo interface {
@@ -26,26 +23,23 @@ type UsersRepo interface {
 }
 
 type service struct {
-	txBeginner  database.TxBeginner
-	authz       Authorizer
-	bansRepo    Repository
-	membersRepo MembersRepo
-	usersRepo   UsersRepo
+	txBeginner database.TxBeginner
+	authz      Authorizer
+	bansRepo   Repository
+	usersRepo  UsersRepo
 }
 
 func NewService(
 	txBeginner database.TxBeginner,
 	authz Authorizer,
 	bansRepo Repository,
-	membersRepo MembersRepo,
 	usersRepo UsersRepo,
 ) Service {
 	return &service{
-		txBeginner:  txBeginner,
-		authz:       authz,
-		bansRepo:    bansRepo,
-		membersRepo: membersRepo,
-		usersRepo:   usersRepo,
+		txBeginner: txBeginner,
+		authz:      authz,
+		bansRepo:   bansRepo,
+		usersRepo:  usersRepo,
 	}
 }
 
@@ -104,4 +98,11 @@ func (s *service) Unban(ctx context.Context, actorID int64, p DeleteParams) erro
 	}
 
 	return tx.Commit()
+}
+
+func (s *service) List(ctx context.Context, actorID int64, p ListParams) ([]*BanView, error) {
+	if err := s.authz.CanViewBans(ctx, p.CommunityID, actorID); err != nil {
+		return nil, err
+	}
+	return s.bansRepo.List(ctx, p)
 }

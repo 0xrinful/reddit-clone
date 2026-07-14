@@ -9,10 +9,11 @@ import (
 type Service interface {
 	CanBan(ctx context.Context, communityID, actorID, targetID int64) error
 	CanUnban(ctx context.Context, communityID, actorID, targetID int64) error
+	CanViewBans(ctx context.Context, communityID, actorID int64) error
 
 	CanPost(ctx context.Context, communityID, userID int64) error
-	CanUpdatePost(actorID, authorID int64) bool
-	CanDeletePost(actorID, authorID int64) bool
+	CanUpdatePost(actorID, authorID int64) error
+	CanDeletePost(actorID, authorID int64) error
 
 	CanUpdateCommunity(ctx context.Context, communityID, actorID int64) error
 	CanDeleteCommunity(ctx context.Context, communityID, actorID int64) error

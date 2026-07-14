@@ -77,7 +77,9 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 				// ─── Bans ──────────────────────────────────────────────────
 				r.Route("/bans", func(r *rush.Router) {
 					r.Use(m.RequireAuth)
+					r.With(m.ReadLimit()).Get("/", s.bans.List)
 					r.Group(func(r *rush.Router) {
+						r.Use(m.WriteLimit())
 						r.Post("/", s.bans.Ban)
 						r.Delete("/{username}", s.bans.Unban)
 					})

@@ -58,7 +58,7 @@ func main() {
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, bg)
 	tokensSvc := tokens.NewService(db, tokensRepo, cfg.JWT)
 	membersSvc := members.NewService(membersRepo)
-	bansSvc := bans.NewService(db, authzSvc, bansRepo, membersRepo, usersRepo)
+	bansSvc := bans.NewService(db, authzSvc, bansRepo, usersRepo)
 
 	srv := server.New(
 		cfg, bg,

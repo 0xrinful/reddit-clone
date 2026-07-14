@@ -2,8 +2,6 @@ package posts
 
 import (
 	"context"
-
-	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 )
 
 type Service interface {
@@ -16,8 +14,8 @@ type Service interface {
 
 type Authorizer interface {
 	CanPost(ctx context.Context, communityID, userID int64) error
-	CanDeletePost(actorID, authorID int64) bool
-	CanUpdatePost(actorID, authorID int64) bool
+	CanDeletePost(actorID, authorID int64) error
+	CanUpdatePost(actorID, authorID int64) error
 }
 
 type service struct {
@@ -54,8 +52,8 @@ func (s *service) Update(ctx context.Context, id, actorID int64, p UpdateParams)
 		return nil, err
 	}
 
-	if !s.authz.CanUpdatePost(actorID, post.UserID) {
-		return nil, errs.ErrPermissionDenied
+	if err := s.authz.CanUpdatePost(actorID, post.UserID); err != nil {
+		return nil, err
 	}
 
 	return s.postsRepo.Update(ctx, id, p)
@@ -71,8 +69,8 @@ func (s *service) Delete(ctx context.Context, id, actorID int64) error {
 		return err
 	}
 
-	if !s.authz.CanDeletePost(actorID, post.UserID) {
-		return errs.ErrPermissionDenied
+	if err := s.authz.CanDeletePost(actorID, post.UserID); err != nil {
+		return err
 	}
 
 	return s.postsRepo.Delete(ctx, id)

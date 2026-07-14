@@ -3,6 +3,7 @@ package bans
 import (
 	"net/http"
 
+	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
 	"github.com/0xrinful/reddit-clone/internal/shared/validator"
@@ -67,4 +68,43 @@ func (h *Handler) Unban(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	user, _ := request.GetUser(r)
+	community := request.GetCommunity(r)
+
+	v := validator.New()
+	pageParams := request.ParseCursorPagination(r, v, pagination.DecodeBanCursor)
+
+	if !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	limit := pageParams.Limit
+	pageParams.Limit += 1
+
+	params := ListParams{
+		CommunityID: community.ID,
+		Pagination:  pageParams,
+	}
+
+	bans, err := h.service.List(r.Context(), user.ID, params)
+	if err != nil {
+		h.responder.HandleServiceError(w, err)
+		return
+	}
+
+	var nextCursor string
+	if len(bans) > limit {
+		page := bans[:limit]
+		last := page[len(page)-1]
+		cursor := &pagination.BanCursor{UserID: last.UserID, CreatedAt: last.CreatedAt}
+
+		nextCursor = cursor.Encode()
+		bans = page
+	}
+
+	h.responder.JSON(w, http.StatusOK, toListBansResponse(bans, nextCursor))
 }

@@ -1,6 +1,10 @@
 package bans
 
-import "time"
+import (
+	"time"
+
+	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
+)
 
 type BanDuration int
 
@@ -51,6 +55,17 @@ type BanRecord struct {
 	ExpiresAt   *time.Time
 }
 
+type UserView struct {
+	Username  string
+	AvatarUrl *string
+}
+
+type BanView struct {
+	BanRecord
+	BannedUser UserView
+	Moderator  *UserView
+}
+
 type CreateParams struct {
 	CommunityID int64
 	Username    string
@@ -61,4 +76,9 @@ type CreateParams struct {
 type DeleteParams struct {
 	CommunityID int64
 	Username    string
+}
+
+type ListParams struct {
+	CommunityID int64
+	Pagination  pagination.CursorParams[pagination.BanCursor]
 }

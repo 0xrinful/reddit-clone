@@ -23,7 +23,7 @@
 │       ├── DELETE                   → delete/archive community (owner) ✅
 │       │
 │       ├── members/
-│       │   ├── GET                  → list members
+│       │   ├── GET                  → list members ✅
 │       │   └── me/
 │       │       ├── PUT              → join community ✅
 │       │       └── DELETE           → leave community ✅
@@ -35,7 +35,7 @@
 │       │       └── DELETE           → remove moderator (owner)
 │       │
 │       ├── bans/
-│       │   ├── GET                  → list banned members
+│       │   ├── GET                  → list banned members ✅
 │       │   ├── POST                 → ban member (moderator) ✅
 │       │   └── {username}/
 │       │       └── DELETE           → unban member (moderator) ✅

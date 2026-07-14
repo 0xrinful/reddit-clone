@@ -62,3 +62,16 @@ func (s *service) CanUnban(ctx context.Context, communityID, actorID, targetID i
 
 	return nil
 }
+
+func (s *service) CanViewBans(ctx context.Context, communityID, actorID int64) error {
+	authority, err := s.members.GetAuthority(ctx, communityID, actorID)
+	if err != nil {
+		return err
+	}
+
+	if !authority.Role.AtLeast(domain.RoleModerator) {
+		return errs.ErrPermissionDenied
+	}
+
+	return nil
+}

@@ -28,10 +28,16 @@ func (s *service) CanPost(ctx context.Context, communityID, userID int64) error 
 	return nil
 }
 
-func (s *service) CanDeletePost(actorID, authorID int64) bool {
-	return actorID == authorID
+func (s *service) CanDeletePost(actorID, authorID int64) error {
+	if actorID != authorID {
+		return errs.ErrPermissionDenied
+	}
+	return nil
 }
 
-func (s *service) CanUpdatePost(actorID, authorID int64) bool {
-	return actorID == authorID
+func (s *service) CanUpdatePost(actorID, authorID int64) error {
+	if actorID != authorID {
+		return errs.ErrPermissionDenied
+	}
+	return nil
 }
