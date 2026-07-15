@@ -66,9 +66,10 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 
 				// ─── Members ──────────────────────────────────────────────────
 				r.Route("/members", func(r *rush.Router) {
-					r.Get("/", s.members.List)
+					r.Use(m.RequireAuth)
+					r.With(m.ReadLimit()).Get("/", s.members.List)
 					r.Route("/me", func(r *rush.Router) {
-						r.Use(m.WriteLimit(), m.RequireAuth)
+						r.Use(m.WriteLimit())
 						r.Put("/", s.members.Join)
 						r.Delete("/", s.members.Leave)
 					})

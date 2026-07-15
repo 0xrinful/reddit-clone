@@ -31,6 +31,11 @@ type ListParams struct {
 	Pagination  pagination.CursorParams[pagination.MemberCursor]
 }
 
+type ListResult struct {
+	Memberships        []*MembershipView
+	CanViewPermissions bool
+}
+
 type PromoteParams struct {
 	CommunityID int64
 	Username    string

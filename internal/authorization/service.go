@@ -21,6 +21,8 @@ type Service interface {
 	CanDeleteCommunity(ctx context.Context, communityID, actorID int64) error
 
 	CanManageModerators(ctx context.Context, communityID, actorID, targetID int64) error
+
+	CanViewPermissions(ctx context.Context, communityID, actorID int64) (bool, error)
 }
 
 type MemberChecker interface {

@@ -47,6 +47,7 @@ func (h *Handler) Leave(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	community := request.GetCommunity(r)
+	user, _ := request.GetUser(r)
 
 	v := validator.New()
 	pageParams := request.ParseCursorPagination(r, v, pagination.DecodeMemberCursor)
@@ -64,23 +65,23 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		Pagination:  pageParams,
 	}
 
-	memberships, err := h.service.List(r.Context(), params)
+	result, err := h.service.List(r.Context(), user.ID, params)
 	if err != nil {
 		h.responder.HandleServiceError(w, err)
 		return
 	}
 
 	var nextCursor string
-	if len(memberships) > limit {
-		page := memberships[:limit]
+	if len(result.Memberships) > limit {
+		page := result.Memberships[:limit]
 		last := page[len(page)-1]
 		cursor := &pagination.MemberCursor{UserID: last.UserID, JoinedAt: last.JoinedAt}
 
 		nextCursor = cursor.Encode()
-		memberships = page
+		result.Memberships = page
 	}
 
-	h.responder.JSON(w, http.StatusOK, toListMembersResponse(memberships, nextCursor))
+	h.responder.JSON(w, http.StatusOK, toListMembersResponse(result, nextCursor))
 }
 
 func (h *Handler) Promote(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +137,7 @@ func (h *Handler) Demote(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ListModerator(w http.ResponseWriter, r *http.Request) {
 	community := request.GetCommunity(r)
+	user, _ := request.GetUser(r)
 
 	v := validator.New()
 	pageParams := request.ParseCursorPagination(r, v, pagination.DecodeMemberCursor)
@@ -153,21 +155,21 @@ func (h *Handler) ListModerator(w http.ResponseWriter, r *http.Request) {
 		Pagination:  pageParams,
 	}
 
-	moderators, err := h.service.ListMods(r.Context(), params)
+	result, err := h.service.ListMods(r.Context(), user.ID, params)
 	if err != nil {
 		h.responder.HandleServiceError(w, err)
 		return
 	}
 
 	var nextCursor string
-	if len(moderators) > limit {
-		page := moderators[:limit]
+	if len(result.Memberships) > limit {
+		page := result.Memberships[:limit]
 		last := page[len(page)-1]
 		cursor := &pagination.MemberCursor{UserID: last.UserID, JoinedAt: last.JoinedAt}
 
 		nextCursor = cursor.Encode()
-		moderators = page
+		result.Memberships = page
 	}
 
-	h.responder.JSON(w, http.StatusOK, toListModeratorsResponse(moderators, nextCursor))
+	h.responder.JSON(w, http.StatusOK, toListModeratorsResponse(result, nextCursor))
 }

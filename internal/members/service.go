@@ -11,14 +11,15 @@ import (
 type Service interface {
 	Join(ctx context.Context, communityID, userID int64) error
 	Leave(ctx context.Context, communityID, userID int64) error
-	List(ctx context.Context, p ListParams) ([]*MembershipView, error)
+	List(ctx context.Context, actorID int64, p ListParams) (*ListResult, error)
 	PromoteToModerator(ctx context.Context, actorID int64, p PromoteParams) error
 	DemoteModerator(ctx context.Context, actorID int64, p DemoteParams) error
-	ListMods(ctx context.Context, p ListParams) ([]*MembershipView, error)
+	ListMods(ctx context.Context, actorID int64, p ListParams) (*ListResult, error)
 }
 
 type Authorizer interface {
 	CanManageModerators(ctx context.Context, communityID, actorID, targetID int64) error
+	CanViewPermissions(ctx context.Context, communityID, actorID int64) (bool, error)
 }
 
 type UsersRepo interface {
@@ -54,8 +55,18 @@ func (s *service) Leave(ctx context.Context, communityID, userID int64) error {
 	return s.membersRepo.Delete(ctx, communityID, userID)
 }
 
-func (s *service) List(ctx context.Context, p ListParams) ([]*MembershipView, error) {
-	return s.membersRepo.List(ctx, p)
+func (s *service) List(ctx context.Context, actorID int64, p ListParams) (*ListResult, error) {
+	canView, err := s.authz.CanViewPermissions(ctx, p.CommunityID, actorID)
+	if err != nil {
+		return nil, err
+	}
+
+	members, err := s.membersRepo.List(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ListResult{members, canView}, nil
 }
 
 func (s *service) PromoteToModerator(ctx context.Context, actorID int64, p PromoteParams) error {
@@ -92,8 +103,8 @@ func (s *service) DemoteModerator(ctx context.Context, actorID int64, p DemotePa
 	})
 }
 
-func (s *service) ListMods(ctx context.Context, p ListParams) ([]*MembershipView, error) {
+func (s *service) ListMods(ctx context.Context, actorID int64, p ListParams) (*ListResult, error) {
 	role := domain.RoleModerator
 	p.Role = &role
-	return s.membersRepo.List(ctx, p)
+	return s.List(ctx, actorID, p)
 }

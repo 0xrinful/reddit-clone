@@ -26,10 +26,14 @@ type MemberDTO struct {
 }
 
 type MembershipDTO struct {
-	Member      MemberDTO `json:"user"`
-	Role        string    `json:"role"`
-	Permissions int64     `json:"permissions"`
-	JoinedAt    time.Time `json:"joined_at"`
+	Member   MemberDTO `json:"user"`
+	Role     string    `json:"role"`
+	JoinedAt time.Time `json:"joined_at"`
+}
+
+type MembershipRestrictedDTO struct {
+	MembershipDTO
+	Permissions int64 `json:"permissions"`
 }
 
 // mapping helpers
@@ -40,36 +44,55 @@ func toMembershipDTO(m *MembershipView) MembershipDTO {
 			Username:  m.Username,
 			AvatarUrl: m.AvatarUrl,
 		},
-		Role:        string(m.Role),
-		Permissions: int64(m.Permissions),
-		JoinedAt:    m.JoinedAt,
+		Role:     string(m.Role),
+		JoinedAt: m.JoinedAt,
+	}
+}
+
+func toMembershipRestrictedDTO(m *MembershipView) MembershipRestrictedDTO {
+	return MembershipRestrictedDTO{
+		MembershipDTO: toMembershipDTO(m),
+		Permissions:   int64(m.Permissions),
 	}
 }
 
 // response envelope
 type ListMembersResponse struct {
-	Members    []MembershipDTO `json:"members"`
-	NextCursor string          `json:"next_cursor,omitempty"`
+	Members    any    `json:"members"`
+	NextCursor string `json:"next_cursor,omitempty"`
 }
 
 type ListModeratorsResponse struct {
-	Moderators []MembershipDTO `json:"moderators"`
-	NextCursor string          `json:"next_cursor,omitempty"`
+	Moderators any    `json:"moderators"`
+	NextCursor string `json:"next_cursor,omitempty"`
 }
 
 // response constructor
-func toListMembersResponse(m []*MembershipView, nextCursor string) ListMembersResponse {
-	members := make([]MembershipDTO, len(m))
+func toList[T any](m []*MembershipView, mapper func(m *MembershipView) T) []T {
+	members := make([]T, len(m))
 	for i := range m {
-		members[i] = toMembershipDTO(m[i])
+		members[i] = mapper(m[i])
 	}
-	return ListMembersResponse{Members: members, NextCursor: nextCursor}
+	return members
 }
 
-func toListModeratorsResponse(m []*MembershipView, nextCursor string) ListModeratorsResponse {
-	moderators := make([]MembershipDTO, len(m))
-	for i := range m {
-		moderators[i] = toMembershipDTO(m[i])
+func toMembershipList(m []*MembershipView, canViewPermissions bool) any {
+	if canViewPermissions {
+		return toList(m, toMembershipRestrictedDTO)
 	}
-	return ListModeratorsResponse{Moderators: moderators, NextCursor: nextCursor}
+	return toList(m, toMembershipDTO)
+}
+
+func toListMembersResponse(result *ListResult, nextCursor string) ListMembersResponse {
+	return ListMembersResponse{
+		Members:    toMembershipList(result.Memberships, result.CanViewPermissions),
+		NextCursor: nextCursor,
+	}
+}
+
+func toListModeratorsResponse(result *ListResult, nextCursor string) ListModeratorsResponse {
+	return ListModeratorsResponse{
+		Moderators: toMembershipList(result.Memberships, result.CanViewPermissions),
+		NextCursor: nextCursor,
+	}
 }
