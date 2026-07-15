@@ -27,5 +27,17 @@ type MembershipView struct {
 
 type ListParams struct {
 	CommunityID int64
+	Role        *domain.Role
 	Pagination  pagination.CursorParams[pagination.MemberCursor]
+}
+
+type PromoteParams struct {
+	CommunityID int64
+	Username    string
+	Perms       domain.Permission
+}
+
+type DemoteParams struct {
+	CommunityID int64
+	Username    string
 }

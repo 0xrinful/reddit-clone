@@ -37,7 +37,8 @@ func (r *postgresRepository) IsBanned(
 ) (bool, error) {
 	query := `
 		SELECT EXISTS (
-			SELECT 1 FROM community_bans WHERE community_id = $1 AND user_id = $2
+			SELECT 1 FROM community_bans 
+			WHERE community_id = $1 AND user_id = $2 AND (expires_at IS NULL OR expires_at > now())
 		)`
 
 	var banned bool

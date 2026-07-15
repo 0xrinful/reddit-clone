@@ -58,7 +58,7 @@ func (r *postgresRepository) GetView(
 ) (*PostView, error) {
 	query := `
 		SELECT 
-			p.id, p.title, p.body, p.created_at, p.score, p.views,
+			p.id, p.title, p.body, p.created_at, p.status, p.score, p.views,
 			p.user_id, u.username as author,
 			p.community_id, c.name 
 		FROM posts p 
@@ -72,7 +72,7 @@ func (r *postgresRepository) GetView(
 	defer cancel()
 
 	err := r.db(ctx).QueryRowContext(ctx, query, id).Scan(
-		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Score, &p.Views,
+		&p.ID, &p.Title, &p.Body, &p.CreatedAt, &p.Status, &p.Score, &p.Views,
 		&p.UserID, &p.Author.Username,
 		&p.CommunityID, &p.Community.Name,
 	)

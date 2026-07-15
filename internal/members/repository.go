@@ -14,8 +14,10 @@ import (
 
 type Repository interface {
 	Get(ctx context.Context, communityID, userID int64) (*Membership, error)
-	GetAuthority(ctx context.Context, communityID, userID int64) (domain.Authority, error)
 	IsMember(ctx context.Context, communityID, userID int64) (bool, error)
+	GetAuthority(ctx context.Context, communityID, userID int64) (domain.Authority, error)
+	UpdateAuthority(ctx context.Context, communityID, userID int64,
+		authority domain.Authority) error
 	Create(ctx context.Context, communityID, userID int64, role domain.Role) error
 	Delete(ctx context.Context, communityID, userID int64) error
 	List(ctx context.Context, p ListParams) ([]*MembershipView, error)
@@ -136,6 +138,10 @@ func (r *postgresRepository) List(ctx context.Context, p ListParams) ([]*Members
 	q.Join("users u on m.user_id = u.id")
 	q.Where("community_id = ?", p.CommunityID)
 
+	if p.Role != nil {
+		q.Where("m.role = ?", p.Role)
+	}
+
 	if cursor != nil {
 		q.Where("(m.joined_at, m.user_id) < (?, ?)", cursor.JoinedAt, cursor.UserID)
 	}
@@ -167,6 +173,24 @@ func (r *postgresRepository) List(ctx context.Context, p ListParams) ([]*Members
 	}
 
 	return memberships, nil
+}
+
+func (r *postgresRepository) UpdateAuthority(
+	ctx context.Context,
+	communityID, userID int64,
+	authority domain.Authority,
+) error {
+	query := `
+		UPDATE community_members SET role = $3, permissions = $4
+		WHERE community_id = $1 AND user_id = $2`
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	args := []any{communityID, userID, authority.Role, authority.Permission}
+
+	_, err := r.db(ctx).ExecContext(ctx, query, args...)
+	return err
 }
 
 func scanMembership(row *sql.Row) (*Membership, error) {

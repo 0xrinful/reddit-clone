@@ -36,7 +36,7 @@ func (h *Handler) Ban(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := CreateParams{
+	params := BanParams{
 		CommunityID: community.ID,
 		Username:    input.Username,
 		Reason:      input.Reason,
@@ -56,7 +56,7 @@ func (h *Handler) Unban(w http.ResponseWriter, r *http.Request) {
 	user, _ := request.GetUser(r)
 	community := request.GetCommunity(r)
 
-	params := DeleteParams{
+	params := UnbanParams{
 		CommunityID: community.ID,
 		Username:    r.PathValue("username"),
 	}

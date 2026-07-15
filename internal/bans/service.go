@@ -8,8 +8,8 @@ import (
 )
 
 type Service interface {
-	Ban(ctx context.Context, actorID int64, p CreateParams) error
-	Unban(ctx context.Context, actorID int64, p DeleteParams) error
+	Ban(ctx context.Context, actorID int64, p BanParams) error
+	Unban(ctx context.Context, actorID int64, p UnbanParams) error
 	List(ctx context.Context, actorID int64, p ListParams) ([]*BanView, error)
 }
 
@@ -52,7 +52,7 @@ func NewService(
 	}
 }
 
-func (s *service) Ban(ctx context.Context, actorID int64, p CreateParams) error {
+func (s *service) Ban(ctx context.Context, actorID int64, p BanParams) error {
 	tx, err := s.txBeginner.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func (s *service) Ban(ctx context.Context, actorID int64, p CreateParams) error 
 	return tx.Commit()
 }
 
-func (s *service) Unban(ctx context.Context, actorID int64, p DeleteParams) error {
+func (s *service) Unban(ctx context.Context, actorID int64, p UnbanParams) error {
 	tx, err := s.txBeginner.BeginTx(ctx, nil)
 	if err != nil {
 		return err

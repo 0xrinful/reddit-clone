@@ -27,8 +27,12 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, authenticated := request.GetUser(r)
+	var actorID *int64
+	if authenticated {
+		actorID = &user.ID
+	}
 
-	post, err := h.service.Get(r.Context(), id)
+	post, err := h.service.Get(r.Context(), id, actorID)
 	if err != nil {
 		h.responder.HandleServiceError(w, err)
 		return

@@ -66,14 +66,14 @@ type BanView struct {
 	Moderator  *UserView
 }
 
-type CreateParams struct {
+type BanParams struct {
 	CommunityID int64
 	Username    string
 	Reason      string
 	Duration    BanDuration
 }
 
-type DeleteParams struct {
+type UnbanParams struct {
 	CommunityID int64
 	Username    string
 }

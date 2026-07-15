@@ -12,11 +12,15 @@ type Service interface {
 	CanViewBans(ctx context.Context, communityID, actorID int64) error
 
 	CanPost(ctx context.Context, communityID, userID int64) error
+	CanViewPost(ctx context.Context, communityID int64, actorID *int64, authorID int64,
+		status domain.PostStatus) error
 	CanUpdatePost(ctx context.Context, communityID, actorID, authorID int64) error
 	CanDeletePost(actorID, authorID int64) error
 
 	CanUpdateCommunity(ctx context.Context, communityID, actorID int64) error
 	CanDeleteCommunity(ctx context.Context, communityID, actorID int64) error
+
+	CanManageModerators(ctx context.Context, communityID, actorID, targetID int64) error
 }
 
 type MemberChecker interface {
