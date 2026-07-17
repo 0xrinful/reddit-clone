@@ -8,6 +8,7 @@ import (
 
 type Service interface {
 	VotePost(ctx context.Context, vote PostVote) (*VotePostResult, error)
+	UnvotePost(ctx context.Context, userID, postID int64) (*VotePostResult, error)
 }
 
 type Authorizer interface {
@@ -70,6 +71,38 @@ func (s *service) VotePost(ctx context.Context, vote PostVote) (*VotePostResult,
 		PostID: vote.PostID,
 		Score:  newScore,
 		Value:  vote.Value,
+	}
+
+	return result, nil
+}
+
+func (s *service) UnvotePost(ctx context.Context, userID, postID int64) (*VotePostResult, error) {
+	tx, err := s.txBeginner.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	ctxTx := database.WithTx(ctx, tx)
+
+	delta, err := s.votesRepo.UnvotePost(ctxTx, userID, postID)
+	if err != nil {
+		return nil, err
+	}
+
+	newScore, err := s.postsRepo.ApplyScoreDelta(ctxTx, postID, delta)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	result := &VotePostResult{
+		PostID: postID,
+		Score:  newScore,
+		Value:  0,
 	}
 
 	return result, nil

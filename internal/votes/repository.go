@@ -2,6 +2,8 @@ package votes
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/database"
@@ -10,7 +12,7 @@ import (
 type Repository interface {
 	CreateInitialPostVote(ctx context.Context, userID, postID int64) error
 	VotePost(ctx context.Context, vote PostVote) (int64, error)
-	UnvotePost(ctx context.Context, userID, postID int64) error
+	UnvotePost(ctx context.Context, userID, postID int64) (int64, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -66,14 +68,24 @@ func (r *postgresRepository) VotePost(ctx context.Context, vote PostVote) (int64
 	return delta, nil
 }
 
-func (r *postgresRepository) UnvotePost(ctx context.Context, userID, postID int64) error {
+func (r *postgresRepository) UnvotePost(ctx context.Context, userID, postID int64) (int64, error) {
 	query := `
 		DELETE FROM post_votes 
-		WHERE user_id = $1 AND post_id = $2`
+		WHERE user_id = $1 AND post_id = $2
+		RETURNING -value AS delta`
+
+	var delta int64
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
-	_, err := r.db(ctx).ExecContext(ctx, query, userID, postID)
-	return err
+	err := r.db(ctx).QueryRowContext(ctx, query, userID, postID).Scan(&delta)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	return delta, nil
 }

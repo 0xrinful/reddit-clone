@@ -52,3 +52,21 @@ func (h *Handler) VotePost(w http.ResponseWriter, r *http.Request) {
 
 	h.responder.JSON(w, http.StatusOK, toVotePostResponse(result))
 }
+
+func (h *Handler) UnvotePost(w http.ResponseWriter, r *http.Request) {
+	user, _ := request.GetUser(r)
+
+	postID, err := request.ReadPostID(r)
+	if err != nil {
+		h.responder.NotFound(w, r)
+		return
+	}
+
+	result, err := h.service.UnvotePost(r.Context(), user.ID, postID)
+	if err != nil {
+		h.responder.HandleServiceError(w, err)
+		return
+	}
+
+	h.responder.JSON(w, http.StatusOK, toVotePostResponse(result))
+}

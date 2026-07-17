@@ -112,6 +112,7 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 			r.Route("/votes", func(r *rush.Router) {
 				r.Use(m.WriteLimit(), m.RequireAuth)
 				r.Put("/", s.votes.VotePost)
+				r.Delete("/", s.votes.UnvotePost)
 			})
 		})
 	})

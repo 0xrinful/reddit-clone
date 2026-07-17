@@ -51,8 +51,8 @@
 │       ├── DELETE                   → delete post (+ auth) ✅
 │       │
 │       ├── votes/
-│       │   ├── PUT                  → create/update vote (+ auth)
-│       │   └── DELETE               → remove vote (+ auth)
+│       │   ├── PUT                  → create/update vote (+ auth) ✅
+│       │   └── DELETE               → remove vote (+ auth) ✅
 │       │
 │       └── comments/
 │           ├── GET                  → list top-level comments
