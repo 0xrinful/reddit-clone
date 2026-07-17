@@ -21,6 +21,7 @@ type Repository interface {
 	List(ctx context.Context, params ListParams) ([]*PostSummary, error)
 	UpdateStatusByUser(ctx context.Context, userID, communityID int64,
 		from, to domain.PostStatus) error
+	ApplyScoreDelta(ctx context.Context, postID int64, delta int64) (int64, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -76,14 +77,10 @@ func (r *postgresRepository) GetView(
 		&p.UserID, &p.Author.Username,
 		&p.CommunityID, &p.Community.Name,
 	)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errs.ErrNotFound
-	}
-
 	if err != nil {
-		return nil, err
+		return nil, scanError(err)
 	}
+
 	p.CreatedAt = p.CreatedAt.UTC()
 
 	return &p, nil
@@ -91,8 +88,8 @@ func (r *postgresRepository) GetView(
 
 func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
 	query := `
-		INSERT INTO posts (title, body, user_id, community_id)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO posts (title, body, user_id, community_id, score)
+		VALUES ($1, $2, $3, $4, 1)
 		RETURNING id, created_at`
 
 	args := []any{p.Title, p.Body, p.UserID, p.CommunityID}
@@ -105,6 +102,7 @@ func (r *postgresRepository) Create(ctx context.Context, p *Post) error {
 		return err
 	}
 	p.CreatedAt = p.CreatedAt.UTC()
+	p.Score = 1
 
 	return nil
 }
@@ -233,6 +231,29 @@ func (r *postgresRepository) List(
 	return posts, nil
 }
 
+func (r *postgresRepository) ApplyScoreDelta(
+	ctx context.Context,
+	postID int64,
+	delta int64,
+) (int64, error) {
+	query := `
+		UPDATE posts SET score = score + $1
+		WHERE id = $2
+		RETURNING score`
+
+	var newScore int64
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	err := r.db(ctx).QueryRowContext(ctx, query, delta, postID).Scan(&newScore)
+	if err != nil {
+		return 0, scanError(err)
+	}
+
+	return newScore, nil
+}
+
 func scanPost(row *sql.Row) (*Post, error) {
 	var p Post
 
@@ -240,15 +261,19 @@ func scanPost(row *sql.Row) (*Post, error) {
 		&p.ID, &p.Title, &p.Body, &p.UserID, &p.CommunityID,
 		&p.Status, &p.Views, &p.Score, &p.CreatedAt,
 	)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, errs.ErrNotFound
-	}
-
 	if err != nil {
-		return nil, err
+		return nil, scanError(err)
 	}
+
 	p.CreatedAt = p.CreatedAt.UTC()
 
 	return &p, nil
+}
+
+func scanError(err error) error {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return errs.ErrNotFound
+	}
+	return err
 }

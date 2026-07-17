@@ -3,6 +3,7 @@ package posts
 import (
 	"context"
 
+	"github.com/0xrinful/reddit-clone/internal/database"
 	"github.com/0xrinful/reddit-clone/internal/domain"
 )
 
@@ -22,17 +23,41 @@ type Authorizer interface {
 	CanDeletePost(actorID, authorID int64) error
 }
 
-type service struct {
-	authz     Authorizer
-	postsRepo Repository
+type VotesRepo interface {
+	CreateInitialPostVote(ctx context.Context, userID, postID int64) error
 }
 
-func NewService(authz Authorizer, postsRepo Repository) Service {
-	return &service{authz: authz, postsRepo: postsRepo}
+func NewService(
+	txBeginner database.TxBeginner,
+	authz Authorizer,
+	postsRepo Repository,
+	votesRepo VotesRepo,
+) Service {
+	return &service{
+		txBeginner: txBeginner,
+		authz:      authz,
+		postsRepo:  postsRepo,
+		votesRepo:  votesRepo,
+	}
+}
+
+type service struct {
+	txBeginner database.TxBeginner
+	authz      Authorizer
+	postsRepo  Repository
+	votesRepo  VotesRepo
 }
 
 func (s *service) Create(ctx context.Context, params CreateParams) (*Post, error) {
-	if err := s.authz.CanPost(ctx, params.CommunityID, params.UserID); err != nil {
+	tx, err := s.txBeginner.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	ctxTx := database.WithTx(ctx, tx)
+
+	if err := s.authz.CanPost(ctxTx, params.CommunityID, params.UserID); err != nil {
 		return nil, err
 	}
 
@@ -43,7 +68,15 @@ func (s *service) Create(ctx context.Context, params CreateParams) (*Post, error
 		CommunityID: params.CommunityID,
 	}
 
-	if err := s.postsRepo.Create(ctx, p); err != nil {
+	if err := s.postsRepo.Create(ctxTx, p); err != nil {
+		return nil, err
+	}
+
+	if err := s.votesRepo.CreateInitialPostVote(ctxTx, params.UserID, p.ID); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

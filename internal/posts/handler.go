@@ -20,7 +20,7 @@ func NewHandler(svc Service, responder *response.Responder) *Handler {
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	id, err := request.ReadID(r)
+	id, err := request.ReadPostID(r)
 	if err != nil {
 		h.responder.NotFound(w, r)
 		return
@@ -83,7 +83,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
-	id, err := request.ReadID(r)
+	id, err := request.ReadPostID(r)
 	if err != nil {
 		h.responder.NotFound(w, r)
 		return
@@ -117,7 +117,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := request.ReadID(r)
+	id, err := request.ReadPostID(r)
 	if err != nil {
 		h.responder.NotFound(w, r)
 		return
