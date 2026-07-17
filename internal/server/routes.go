@@ -100,12 +100,18 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 		})
 
 		// ─── POSTS ────────────────────────────────────────────────────────
-		r.Route("/posts", func(r *rush.Router) {
-			r.With(m.ReadLimit()).Get("/{id}", s.posts.Get)
+		r.Route("/posts/{post_id}", func(r *rush.Router) {
+			r.With(m.ReadLimit()).Get("/", s.posts.Get)
 			r.Group(func(r *rush.Router) {
 				r.Use(m.WriteLimit(), m.RequireAuth)
-				r.Delete("/{id}", s.posts.Delete)
-				r.Patch("/{id}", s.posts.Update)
+				r.Delete("/", s.posts.Delete)
+				r.Patch("/", s.posts.Update)
+			})
+
+			// ─── Post Votes ────────────────────────────────────────────────────────
+			r.Route("/votes", func(r *rush.Router) {
+				r.Use(m.WriteLimit(), m.RequireAuth)
+				r.Put("/", s.votes.VotePost)
 			})
 		})
 	})

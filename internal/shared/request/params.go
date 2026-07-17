@@ -9,8 +9,8 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/shared/validator"
 )
 
-func ReadID(r *http.Request) (int64, error) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+func ReadPostID(r *http.Request) (int64, error) {
+	id, err := strconv.ParseInt(r.PathValue("post_id"), 10, 64)
 	if err != nil || id < 1 {
 		return 0, err
 	}

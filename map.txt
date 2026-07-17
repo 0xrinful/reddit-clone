@@ -29,10 +29,10 @@
 │       │       └── DELETE           → leave community ✅
 │       │
 │       ├── moderators/
-│       │   ├── GET                  → list moderators
-│       │   ├── POST                 → add moderator (owner)
+│       │   ├── GET                  → list moderators ✅
+│       │   ├── POST                 → add moderator ✅
 │       │   └── {username}/
-│       │       └── DELETE           → remove moderator (owner)
+│       │       └── DELETE           → remove moderator ✅
 │       │
 │       ├── bans/
 │       │   ├── GET                  → list banned members ✅

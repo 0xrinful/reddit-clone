@@ -24,6 +24,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/shared/mailer"
 	"github.com/0xrinful/reddit-clone/internal/tokens"
 	"github.com/0xrinful/reddit-clone/internal/users"
+	"github.com/0xrinful/reddit-clone/internal/votes"
 )
 
 func main() {
@@ -50,21 +51,24 @@ func main() {
 	tokensRepo := tokens.NewRepository(db)
 	membersRepo := members.NewRepository(db)
 	bansRepo := bans.NewRepository(db)
+	votesRepo := votes.NewRepository(db)
 
 	authzSvc := authorization.NewService(bansRepo, membersRepo)
 	communitiesSvc := communities.NewService(db, authzSvc, communitiesRepo, membersRepo)
-	postsSvc := posts.NewService(authzSvc, postsRepo)
+	postsSvc := posts.NewService(db, authzSvc, postsRepo, votesRepo)
 	usersSvc := users.NewService(usersRepo)
 	authSvc := auth.NewService(db, usersRepo, tokensRepo, mailer, bg)
 	tokensSvc := tokens.NewService(db, tokensRepo, cfg.JWT)
 	membersSvc := members.NewService(authzSvc, membersRepo, usersRepo)
 	bansSvc := bans.NewService(db, authzSvc, bansRepo, usersRepo, postsRepo)
+	votesSvc := votes.NewService(db, votesRepo, postsRepo)
 
 	srv := server.New(
 		cfg, bg,
 		communitiesSvc,
 		postsSvc, usersSvc, authSvc,
 		tokensSvc, membersSvc, bansSvc,
+		votesSvc,
 	)
 
 	// graceful shutdown

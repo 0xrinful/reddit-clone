@@ -17,6 +17,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/shared/response"
 	"github.com/0xrinful/reddit-clone/internal/tokens"
 	"github.com/0xrinful/reddit-clone/internal/users"
+	"github.com/0xrinful/reddit-clone/internal/votes"
 )
 
 type Server struct {
@@ -35,6 +36,7 @@ type Server struct {
 	auth        *auth.Handler
 	members     *members.Handler
 	bans        *bans.Handler
+	votes       *votes.Handler
 }
 
 func New(
@@ -47,6 +49,7 @@ func New(
 	tokensSvc tokens.Service,
 	membersSvc members.Service,
 	bansSvc bans.Service,
+	votesSvc votes.Service,
 ) *Server {
 	responder := response.NewResponder()
 
@@ -56,6 +59,7 @@ func New(
 	authHandler := auth.NewHandler(authSvc, tokensSvc, responder)
 	membersHandler := members.NewHandler(membersSvc, responder)
 	bansHandler := bans.NewHandler(bansSvc, responder)
+	votesHandler := votes.NewHandler(votesSvc, responder)
 
 	server := &Server{
 		cfg: cfg,
@@ -70,6 +74,7 @@ func New(
 		auth:        authHandler,
 		members:     membersHandler,
 		bans:        bansHandler,
+		votes:       votesHandler,
 	}
 
 	router := server.setupRoutes(responder)
