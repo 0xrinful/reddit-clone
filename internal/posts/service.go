@@ -84,12 +84,12 @@ func (s *service) Create(ctx context.Context, params CreateParams) (*Post, error
 }
 
 func (s *service) Update(ctx context.Context, id, actorID int64, p UpdateParams) (*Post, error) {
-	post, err := s.postsRepo.GetByID(ctx, id)
+	post, err := s.postsRepo.GetAuthorizationInfo(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.authz.CanUpdatePost(ctx, post.CommunityID, actorID, post.UserID); err != nil {
+	if err := s.authz.CanUpdatePost(ctx, post.CommunityID, actorID, post.AuthorID); err != nil {
 		return nil, err
 	}
 
@@ -111,12 +111,12 @@ func (s *service) Get(ctx context.Context, id int64, actorID *int64) (*PostView,
 }
 
 func (s *service) Delete(ctx context.Context, id, actorID int64) error {
-	post, err := s.postsRepo.GetByID(ctx, id)
+	post, err := s.postsRepo.GetAuthorizationInfo(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	if err := s.authz.CanDeletePost(actorID, post.UserID); err != nil {
+	if err := s.authz.CanDeletePost(actorID, post.AuthorID); err != nil {
 		return err
 	}
 

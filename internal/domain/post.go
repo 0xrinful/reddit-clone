@@ -11,3 +11,9 @@ const (
 func (s PostStatus) IsVisible() bool {
 	return s == PostStatusActive
 }
+
+type PostAuthzInfo struct {
+	AuthorID    int64
+	CommunityID int64
+	Status      PostStatus
+}

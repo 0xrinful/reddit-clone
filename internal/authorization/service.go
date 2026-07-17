@@ -21,8 +21,9 @@ type Service interface {
 	CanDeleteCommunity(ctx context.Context, communityID, actorID int64) error
 
 	CanManageModerators(ctx context.Context, communityID, actorID, targetID int64) error
-
 	CanViewPermissions(ctx context.Context, communityID, actorID int64) (bool, error)
+
+	CanVotePost(ctx context.Context, actorID, postID int64) error
 }
 
 type MemberChecker interface {
@@ -34,11 +35,16 @@ type BanChecker interface {
 	IsBanned(ctx context.Context, communityID, userID int64) (bool, error)
 }
 
-func NewService(banChecker BanChecker, memberChecker MemberChecker) Service {
-	return &service{bans: banChecker, members: memberChecker}
+type PostsRepo interface {
+	GetAuthorizationInfo(ctx context.Context, id int64) (*domain.PostAuthzInfo, error)
+}
+
+func NewService(banChecker BanChecker, memberChecker MemberChecker, postsRepo PostsRepo) Service {
+	return &service{bans: banChecker, members: memberChecker, posts: postsRepo}
 }
 
 type service struct {
 	bans    BanChecker
 	members MemberChecker
+	posts   PostsRepo
 }
