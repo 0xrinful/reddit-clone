@@ -56,7 +56,7 @@ type PostPublicDTO struct {
 	CreatedAt time.Time    `json:"created_at"`
 }
 
-type PostOwnerDTO struct {
+type PostAuthorDTO struct {
 	PostPublicDTO
 	Status string `json:"status"`
 	Views  int64  `json:"views"`
@@ -100,8 +100,8 @@ func toPostPublicDTO(p *PostView) PostPublicDTO {
 	}
 }
 
-func toPostOwnerDTO(p *PostView) PostOwnerDTO {
-	return PostOwnerDTO{
+func toPostAuthorDTO(p *PostView) PostAuthorDTO {
+	return PostAuthorDTO{
 		PostPublicDTO: toPostPublicDTO(p),
 		Status:        string(p.Status),
 		Views:         p.Views,
@@ -126,11 +126,7 @@ func toPostSummaryDTO(p *PostSummary) PostSummaryDTO {
 
 // response envelope
 type PostResponse struct {
-	Post PostPublicDTO `json:"post"`
-}
-
-type PostOwnerResponse struct {
-	Post PostOwnerDTO `json:"post"`
+	Post any `json:"post"`
 }
 
 type ListPostsResponse struct {
@@ -139,16 +135,11 @@ type ListPostsResponse struct {
 }
 
 // response constructor
-func toPostResponse(p *PostView) PostResponse {
-	return PostResponse{
-		Post: toPostPublicDTO(p),
+func toPostResponse(p *PostView, isAuthor bool) PostResponse {
+	if isAuthor {
+		return PostResponse{Post: toPostAuthorDTO(p)}
 	}
-}
-
-func toPostOwnerResponse(p *PostView) PostOwnerResponse {
-	return PostOwnerResponse{
-		Post: toPostOwnerDTO(p),
-	}
+	return PostResponse{Post: toPostPublicDTO(p)}
 }
 
 func toListPostsResponse(p []*PostSummary, nextCursor string) ListPostsResponse {

@@ -48,16 +48,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.authService.RegisterUser(r.Context(), params)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrDuplicateEmail):
-			v.AddError("email", "email is already in use")
-			h.responder.ValidationError(w, v.Errors)
-		case errors.Is(err, errs.ErrDuplicateUsername):
-			v.AddError("username", "username is already in use")
-			h.responder.ValidationError(w, v.Errors)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -136,12 +127,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.authService.AuthenticateUser(r.Context(), input.Email, input.Password)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrInvalidCredentials):
-			h.responder.InvalidCredentials(w)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 
@@ -177,12 +163,7 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	oldToken, err := h.tokensService.VerifyRefreshToken(r.Context(), input.Token)
 	if err != nil {
-		switch {
-		case errors.Is(err, errs.ErrInvalidToken):
-			h.responder.InvalidToken(w)
-		default:
-			h.responder.ServerError(w, err)
-		}
+		h.responder.HandleServiceError(w, err)
 		return
 	}
 

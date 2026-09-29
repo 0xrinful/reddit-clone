@@ -121,6 +121,12 @@ func (r *Responder) HandleServiceError(w http.ResponseWriter, err error) {
 	case errors.Is(err, errs.ErrPermissionDenied):
 		r.PermissionDenied(w)
 
+	case errors.Is(err, errs.ErrInvalidToken):
+		r.InvalidToken(w)
+
+	case errors.Is(err, errs.ErrInvalidCredentials):
+		r.InvalidCredentials(w)
+
 	case errors.Is(err, errs.ErrDuplicateEmail):
 		r.Conflict(w, "duplicate_email", "email already in use")
 

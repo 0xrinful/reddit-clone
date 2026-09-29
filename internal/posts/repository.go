@@ -15,7 +15,7 @@ import (
 type Repository interface {
 	GetByID(ctx context.Context, id int64) (*Post, error)
 	GetView(ctx context.Context, id int64) (*PostView, error)
-	GetAuthorizationInfo(ctx context.Context, id int64) (*domain.PostAuthzInfo, error)
+	GetAuthorizationData(ctx context.Context, id int64) (*domain.PostAuthorizationData, error)
 	Create(ctx context.Context, p *Post) error
 	Update(ctx context.Context, id int64, p UpdateParams) (*Post, error)
 	Delete(ctx context.Context, id int64) error
@@ -54,27 +54,27 @@ func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Post, erro
 	return scanPost(row)
 }
 
-func (r *postgresRepository) GetAuthorizationInfo(
+func (r *postgresRepository) GetAuthorizationData(
 	ctx context.Context,
 	id int64,
-) (*domain.PostAuthzInfo, error) {
+) (*domain.PostAuthorizationData, error) {
 	query := `
 		SELECT user_id, community_id, status FROM posts 
 		WHERE id = $1`
 
-	var info domain.PostAuthzInfo
+	var data domain.PostAuthorizationData
 
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	err := r.db(ctx).
 		QueryRowContext(ctx, query, id).
-		Scan(&info.AuthorID, &info.CommunityID, &info.Status)
+		Scan(&data.AuthorID, &data.CommunityID, &data.Status)
 	if err != nil {
 		return nil, scanError(err)
 	}
 
-	return &info, nil
+	return &data, nil
 }
 
 func (r *postgresRepository) GetView(

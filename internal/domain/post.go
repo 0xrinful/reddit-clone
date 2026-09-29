@@ -12,7 +12,7 @@ func (s PostStatus) IsVisible() bool {
 	return s == PostStatusActive
 }
 
-type PostAuthzInfo struct {
+type PostAuthorizationData struct {
 	AuthorID    int64
 	CommunityID int64
 	Status      PostStatus

@@ -5,8 +5,8 @@ import (
 )
 
 type CommunityCursor struct {
-	ID        int64      `json:"id"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func (c *CommunityCursor) Encode() string {

@@ -36,7 +36,7 @@ type BanChecker interface {
 }
 
 type PostsRepo interface {
-	GetAuthorizationInfo(ctx context.Context, id int64) (*domain.PostAuthzInfo, error)
+	GetAuthorizationData(ctx context.Context, id int64) (*domain.PostAuthorizationData, error)
 }
 
 func NewService(banChecker BanChecker, memberChecker MemberChecker, postsRepo PostsRepo) Service {

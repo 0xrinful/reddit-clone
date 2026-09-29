@@ -1,11 +1,9 @@
 package middleware
 
 import (
-	"errors"
 	"net/http"
 	"strings"
 
-	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 	"github.com/0xrinful/reddit-clone/internal/tokens"
 )
@@ -30,12 +28,7 @@ func (m *Middleware) Authenticate(svc tokens.Service) func(http.Handler) http.Ha
 
 			claims, err := svc.VerifyAccessToken(parts[1])
 			if err != nil {
-				switch {
-				case errors.Is(err, errs.ErrInvalidToken):
-					m.responder.InvalidToken(w)
-				default:
-					m.responder.ServerError(w, err)
-				}
+				m.responder.HandleServiceError(w, err)
 				return
 			}
 

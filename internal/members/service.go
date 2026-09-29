@@ -12,7 +12,7 @@ type Service interface {
 	Join(ctx context.Context, communityID, userID int64) error
 	Leave(ctx context.Context, communityID, userID int64) error
 	List(ctx context.Context, actorID int64, p ListParams) (*ListResult, error)
-	PromoteToModerator(ctx context.Context, actorID int64, p PromoteParams) error
+	PromoteModerator(ctx context.Context, actorID int64, p PromoteParams) error
 	DemoteModerator(ctx context.Context, actorID int64, p DemoteParams) error
 	ListMods(ctx context.Context, actorID int64, p ListParams) (*ListResult, error)
 }
@@ -69,7 +69,7 @@ func (s *service) List(ctx context.Context, actorID int64, p ListParams) (*ListR
 	return &ListResult{members, canView}, nil
 }
 
-func (s *service) PromoteToModerator(ctx context.Context, actorID int64, p PromoteParams) error {
+func (s *service) PromoteModerator(ctx context.Context, actorID int64, p PromoteParams) error {
 	targetID, err := s.usersRepo.GetIDByUsername(ctx, p.Username)
 	if err != nil {
 		return err

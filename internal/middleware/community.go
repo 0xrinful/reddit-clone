@@ -1,11 +1,9 @@
 package middleware
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/0xrinful/reddit-clone/internal/communities"
-	"github.com/0xrinful/reddit-clone/internal/shared/errs"
 	"github.com/0xrinful/reddit-clone/internal/shared/request"
 )
 
@@ -15,12 +13,7 @@ func (m *Middleware) LoadCommunity(svc communities.Service) func(http.Handler) h
 			name := r.PathValue("community_name")
 			c, err := svc.GetByName(r.Context(), name)
 			if err != nil {
-				switch {
-				case errors.Is(err, errs.ErrNotFound):
-					m.responder.NotFound(w, r)
-				default:
-					m.responder.ServerError(w, err)
-				}
+				m.responder.HandleServiceError(w, err)
 				return
 			}
 			r = request.WithCommunity(r, &request.CommunityCtx{ID: c.ID, Name: c.Name})

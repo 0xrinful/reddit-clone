@@ -38,11 +38,8 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if authenticated && user.ID == post.UserID {
-		h.responder.JSON(w, http.StatusOK, toPostOwnerResponse(post))
-	} else {
-		h.responder.JSON(w, http.StatusOK, toPostResponse(post))
-	}
+	isAuthor := authenticated && user.ID == post.UserID
+	h.responder.JSON(w, http.StatusOK, toPostResponse(post, isAuthor))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +76,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	headers.Set("Location", fmt.Sprintf("/api/v1/posts/%d", post.ID))
 
 	view := postToView(post, community.Name)
-	h.responder.JSON(w, http.StatusCreated, toPostOwnerResponse(view), headers)
+	h.responder.JSON(w, http.StatusCreated, toPostResponse(view, true), headers)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +110,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	view := postToView(post, "")
-	h.responder.JSON(w, http.StatusCreated, toPostOwnerResponse(view))
+	h.responder.JSON(w, http.StatusCreated, toPostResponse(view, true))
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {

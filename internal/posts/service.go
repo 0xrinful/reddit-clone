@@ -11,7 +11,7 @@ type Service interface {
 	Get(ctx context.Context, id int64, actorID *int64) (*PostView, error)
 	Create(ctx context.Context, params CreateParams) (*Post, error)
 	Update(ctx context.Context, id, actorID int64, p UpdateParams) (*Post, error)
-	Delete(ctx context.Context, id, userID int64) error
+	Delete(ctx context.Context, id, actorID int64) error
 	List(ctx context.Context, params ListParams) ([]*PostSummary, error)
 }
 
@@ -84,7 +84,7 @@ func (s *service) Create(ctx context.Context, params CreateParams) (*Post, error
 }
 
 func (s *service) Update(ctx context.Context, id, actorID int64, p UpdateParams) (*Post, error) {
-	post, err := s.postsRepo.GetAuthorizationInfo(ctx, id)
+	post, err := s.postsRepo.GetAuthorizationData(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (s *service) Get(ctx context.Context, id int64, actorID *int64) (*PostView,
 }
 
 func (s *service) Delete(ctx context.Context, id, actorID int64) error {
-	post, err := s.postsRepo.GetAuthorizationInfo(ctx, id)
+	post, err := s.postsRepo.GetAuthorizationData(ctx, id)
 	if err != nil {
 		return err
 	}

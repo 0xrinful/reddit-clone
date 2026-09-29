@@ -108,7 +108,7 @@ func (h *Handler) Promote(w http.ResponseWriter, r *http.Request) {
 		Perms:       domain.Permission(input.Permissions),
 	}
 
-	err = h.service.PromoteToModerator(r.Context(), user.ID, params)
+	err = h.service.PromoteModerator(r.Context(), user.ID, params)
 	if err != nil {
 		h.responder.HandleServiceError(w, err)
 		return

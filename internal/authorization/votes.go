@@ -7,7 +7,7 @@ import (
 )
 
 func (s *service) CanVotePost(ctx context.Context, actorID, postID int64) error {
-	info, err := s.posts.GetAuthorizationInfo(ctx, postID)
+	info, err := s.posts.GetAuthorizationData(ctx, postID)
 	if err != nil {
 		return err
 	}
