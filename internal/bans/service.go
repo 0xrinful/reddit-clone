@@ -33,7 +33,6 @@ type service struct {
 	authz      Authorizer
 	bansRepo   Repository
 	usersRepo  UsersRepo
-	postsRepo  PostsRepo
 }
 
 func NewService(
@@ -41,14 +40,12 @@ func NewService(
 	authz Authorizer,
 	bansRepo Repository,
 	usersRepo UsersRepo,
-	postsRepo PostsRepo,
 ) Service {
 	return &service{
 		txBeginner: txBeginner,
 		authz:      authz,
 		bansRepo:   bansRepo,
 		usersRepo:  usersRepo,
-		postsRepo:  postsRepo,
 	}
 }
 
@@ -81,12 +78,6 @@ func (s *service) Ban(ctx context.Context, actorID int64, p BanParams) error {
 		return err
 	}
 
-	err = s.postsRepo.UpdateStatusByUser(ctxTx, targetID, p.CommunityID,
-		domain.PostStatusActive, domain.PostStatusBanned)
-	if err != nil {
-		return err
-	}
-
 	return tx.Commit()
 }
 
@@ -108,12 +99,6 @@ func (s *service) Unban(ctx context.Context, actorID int64, p UnbanParams) error
 	}
 
 	err = s.bansRepo.Delete(ctxTx, p.CommunityID, targetID)
-	if err != nil {
-		return err
-	}
-
-	err = s.postsRepo.UpdateStatusByUser(ctxTx, targetID, p.CommunityID,
-		domain.PostStatusBanned, domain.PostStatusActive)
 	if err != nil {
 		return err
 	}

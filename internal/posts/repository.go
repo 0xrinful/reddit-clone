@@ -205,7 +205,7 @@ func (r *postgresRepository) List(
 	q.Join("users u ON p.user_id = u.id")
 
 	q.Where("p.community_id = ?", params.CommunityID)
-	q.Where("p.status = ?", domain.PostStatusActive)
+	q.Where("p.status = ?", domain.PostStatusVisible)
 
 	switch params.Sort {
 	case SortByNew:

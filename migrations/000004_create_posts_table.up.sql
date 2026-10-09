@@ -1,12 +1,14 @@
+CREATE TYPE post_status AS ENUM('visible', 'deleted', 'removed');
+
 CREATE TABLE IF NOT EXISTS posts (
   id BIGSERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   body TEXT NOT NULL,
   user_id BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
   community_id BIGINT NOT NULL REFERENCES communities (id) ON DELETE CASCADE,
-  status TEXT NOT NULL DEFAULT 'active',
-  views BIGINT NOT NULL DEFAULT 0,
-  score BIGINT NOT NULL DEFAULT 0,
+  status post_status NOT NULL DEFAULT 'visible',
+  views BIGINT NOT NULL DEFAULT 1,
+  score BIGINT NOT NULL DEFAULT 1,
   created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 

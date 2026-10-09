@@ -159,7 +159,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	if len(communities) > limit {
 		page := communities[:limit] // trim extra row used for next page check
 		last := page[len(page)-1]
-		next := &pagination.CommunityCursor{ID: last.ID, CreatedAt: &last.CreatedAt}
+		next := &pagination.CommunityCursor{ID: last.ID, CreatedAt: last.CreatedAt}
 
 		nextCursor = next.Encode()
 		communities = page

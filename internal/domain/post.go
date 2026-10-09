@@ -3,13 +3,13 @@ package domain
 type PostStatus string
 
 const (
-	PostStatusActive       PostStatus = "active"
-	PostStatusRemovedByMod PostStatus = "removed_by_mod"
-	PostStatusBanned       PostStatus = "banned"
+	PostStatusVisible PostStatus = "visible"
+	PostStatusDeleted PostStatus = "deleted"
+	PostStatusRemoved PostStatus = "removed"
 )
 
 func (s PostStatus) IsVisible() bool {
-	return s == PostStatusActive
+	return s == PostStatusVisible
 }
 
 type PostAuthorizationData struct {
