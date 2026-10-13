@@ -1,5 +1,9 @@
+DROP TRIGGER IF EXISTS comments_hierarchy_trigger ON comments;
+
+DROP FUNCTION IF EXISTS handle_comment_hierarchy ();
+
 DROP TABLE IF EXISTS comments;
 
-DROP INDEX IF EXISTS idx_comments_post_id;
+DROP TYPE IF EXISTS comment_status;
 
-DROP INDEX IF EXISTS idx_comments_parent_id;
+DROP EXTENSION IF EXISTS ltree;
