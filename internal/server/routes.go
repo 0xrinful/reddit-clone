@@ -114,6 +114,11 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 				r.Put("/", s.votes.VotePost)
 				r.Delete("/", s.votes.UnvotePost)
 			})
+
+			// ─── Post Comments ────────────────────────────────────────────────────────
+			r.Route("/comments", func(r *rush.Router) {
+				r.With(m.WriteLimit(), m.RequireAuth).Post("/", s.comments.Create)
+			})
 		})
 	})
 

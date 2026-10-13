@@ -12,6 +12,10 @@ func (s *service) CanVotePost(ctx context.Context, actorID, postID int64) error 
 		return err
 	}
 
+	if !info.Status.CanView() {
+		return errs.ErrPermissionDenied
+	}
+
 	banned, err := s.bans.IsBanned(ctx, info.CommunityID, actorID)
 	if err != nil {
 		return err

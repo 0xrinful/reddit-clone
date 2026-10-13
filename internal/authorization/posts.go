@@ -32,7 +32,7 @@ func (s *service) CanPost(ctx context.Context, communityID, userID int64) error 
 func (s *service) CanViewPost(ctx context.Context, communityID int64, actorID *int64,
 	authorID int64, status domain.PostStatus,
 ) error {
-	if status.IsVisible() {
+	if status.CanView() {
 		return nil
 	}
 

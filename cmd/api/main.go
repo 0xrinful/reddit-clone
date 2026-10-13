@@ -13,6 +13,7 @@ import (
 	"github.com/0xrinful/reddit-clone/internal/auth"
 	"github.com/0xrinful/reddit-clone/internal/authorization"
 	"github.com/0xrinful/reddit-clone/internal/bans"
+	"github.com/0xrinful/reddit-clone/internal/comments"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
 	"github.com/0xrinful/reddit-clone/internal/database"
@@ -52,6 +53,7 @@ func main() {
 	membersRepo := members.NewRepository(db)
 	bansRepo := bans.NewRepository(db)
 	votesRepo := votes.NewRepository(db)
+	commentsRepo := comments.NewRepository(db)
 
 	authzSvc := authorization.NewService(bansRepo, membersRepo, postsRepo)
 	communitiesSvc := communities.NewService(db, authzSvc, communitiesRepo, membersRepo)
@@ -62,13 +64,14 @@ func main() {
 	membersSvc := members.NewService(authzSvc, membersRepo, usersRepo)
 	bansSvc := bans.NewService(db, authzSvc, bansRepo, usersRepo)
 	votesSvc := votes.NewService(db, authzSvc, votesRepo, postsRepo)
+	commentsSvc := comments.NewService(db, authzSvc, commentsRepo)
 
 	srv := server.New(
 		cfg, bg,
 		communitiesSvc,
 		postsSvc, usersSvc, authSvc,
 		tokensSvc, membersSvc, bansSvc,
-		votesSvc,
+		votesSvc, commentsSvc,
 	)
 
 	// graceful shutdown

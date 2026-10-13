@@ -9,6 +9,7 @@ import (
 
 	"github.com/0xrinful/reddit-clone/internal/auth"
 	"github.com/0xrinful/reddit-clone/internal/bans"
+	"github.com/0xrinful/reddit-clone/internal/comments"
 	"github.com/0xrinful/reddit-clone/internal/communities"
 	"github.com/0xrinful/reddit-clone/internal/config"
 	"github.com/0xrinful/reddit-clone/internal/members"
@@ -37,6 +38,7 @@ type Server struct {
 	members     *members.Handler
 	bans        *bans.Handler
 	votes       *votes.Handler
+	comments    *comments.Handler
 }
 
 func New(
@@ -50,6 +52,7 @@ func New(
 	membersSvc members.Service,
 	bansSvc bans.Service,
 	votesSvc votes.Service,
+	commentsSvc comments.Service,
 ) *Server {
 	responder := response.NewResponder()
 
@@ -60,6 +63,7 @@ func New(
 	membersHandler := members.NewHandler(membersSvc, responder)
 	bansHandler := bans.NewHandler(bansSvc, responder)
 	votesHandler := votes.NewHandler(votesSvc, responder)
+	commentsHandler := comments.NewHandler(commentsSvc, responder)
 
 	server := &Server{
 		cfg: cfg,
@@ -75,6 +79,7 @@ func New(
 		members:     membersHandler,
 		bans:        bansHandler,
 		votes:       votesHandler,
+		comments:    commentsHandler,
 	}
 
 	router := server.setupRoutes(responder)

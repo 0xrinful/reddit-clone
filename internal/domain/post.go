@@ -8,8 +8,8 @@ const (
 	PostStatusRemoved PostStatus = "removed"
 )
 
-func (s PostStatus) IsVisible() bool {
-	return s == PostStatusVisible
+func (s PostStatus) CanView() bool {
+	return s == PostStatusVisible || s == PostStatusDeleted
 }
 
 type PostAuthorizationData struct {

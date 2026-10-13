@@ -24,6 +24,8 @@ type Service interface {
 	CanViewPermissions(ctx context.Context, communityID, actorID int64) (bool, error)
 
 	CanVotePost(ctx context.Context, actorID, postID int64) error
+
+	CanComment(ctx context.Context, actorID, postID int64) error
 }
 
 type MemberChecker interface {
