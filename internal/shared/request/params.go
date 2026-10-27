@@ -17,6 +17,14 @@ func ReadPostID(r *http.Request) (int64, error) {
 	return id, nil
 }
 
+func ReadCommentID(r *http.Request) (int64, error) {
+	id, err := strconv.ParseInt(r.PathValue("comment_id"), 10, 64)
+	if err != nil || id < 1 {
+		return 0, err
+	}
+	return id, nil
+}
+
 func ReadString(qs url.Values, key string, defaultValue string) string {
 	s := qs.Get(key)
 	if s == "" {

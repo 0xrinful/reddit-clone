@@ -11,6 +11,7 @@ import (
 )
 
 type Repository interface {
+	GetByID(ctx context.Context, id int64) (*Comment, error)
 	Create(ctx context.Context, c *Comment) error
 }
 
@@ -27,6 +28,21 @@ func (r *postgresRepository) db(ctx context.Context) database.DB {
 		return tx
 	}
 	return r.base
+}
+
+func (r *postgresRepository) GetByID(ctx context.Context, id int64) (*Comment, error) {
+	query := `
+		SELECT
+			id, post_id, user_id, parent_id, content, score, reply_count, status, created_at
+		FROM comments
+		WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	row := r.db(ctx).QueryRowContext(ctx, query, id)
+
+	return scanComment(row)
 }
 
 func (r *postgresRepository) Create(ctx context.Context, c *Comment) error {
@@ -49,6 +65,25 @@ func (r *postgresRepository) Create(ctx context.Context, c *Comment) error {
 	c.CreatedAt = c.CreatedAt.UTC()
 
 	return nil
+}
+
+func scanComment(row *sql.Row) (*Comment, error) {
+	var c Comment
+	var parentID sql.NullInt64
+
+	err := row.Scan(
+		&c.ID, &c.PostID, &c.UserID, &parentID,
+		&c.Content, &c.Score, &c.ReplyCount, &c.Status, &c.CreatedAt,
+	)
+	if err != nil {
+		return nil, scanError(err)
+	}
+
+	if parentID.Valid {
+		c.ParentID = &parentID.Int64
+	}
+	c.CreatedAt = c.CreatedAt.UTC()
+	return &c, nil
 }
 
 func scanError(err error) error {

@@ -29,8 +29,13 @@ type CommentView struct {
 }
 
 type CreateParams struct {
-	PostID   int64
+	PostID  int64
+	UserID  int64
+	Content string
+}
+
+type ReplyParams struct {
 	UserID   int64
-	ParentID *int64
+	ParentID int64
 	Content  string
 }

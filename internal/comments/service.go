@@ -4,14 +4,17 @@ import (
 	"context"
 
 	"github.com/0xrinful/reddit-clone/internal/database"
+	"github.com/0xrinful/reddit-clone/internal/domain"
 )
 
 type Service interface {
 	Create(ctx context.Context, params CreateParams) (*Comment, error)
+	Reply(ctx context.Context, params ReplyParams) (*Comment, error)
 }
 
 type Authorizer interface {
 	CanComment(ctx context.Context, actorID, postID int64) error
+	CanReply(ctx context.Context, actorID, postID int64, status domain.CommentStatus) error
 }
 
 func NewService(
@@ -46,9 +49,44 @@ func (s *service) Create(ctx context.Context, params CreateParams) (*Comment, er
 	}
 
 	c := &Comment{
-		PostID:   params.PostID,
+		PostID:  params.PostID,
+		UserID:  params.UserID,
+		Content: params.Content,
+	}
+
+	if err := s.commentsRepo.Create(ctxTx, c); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
+func (s *service) Reply(ctx context.Context, params ReplyParams) (*Comment, error) {
+	tx, err := s.txBeginner.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	ctxTx := database.WithTx(ctx, tx)
+
+	parent, err := s.commentsRepo.GetByID(ctx, params.ParentID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.authz.CanReply(ctx, params.UserID, parent.PostID, parent.Status); err != nil {
+		return nil, err
+	}
+
+	c := &Comment{
+		PostID:   parent.PostID,
 		UserID:   params.UserID,
-		ParentID: params.ParentID,
+		ParentID: &params.ParentID,
 		Content:  params.Content,
 	}
 

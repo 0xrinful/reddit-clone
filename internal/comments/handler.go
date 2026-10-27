@@ -41,13 +41,51 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := CreateParams{
-		UserID:   user.ID,
-		PostID:   postID,
-		Content:  input.Content,
-		ParentID: nil,
+		UserID:  user.ID,
+		PostID:  postID,
+		Content: input.Content,
 	}
 
 	comment, err := h.service.Create(r.Context(), params)
+	if err != nil {
+		h.responder.HandleServiceError(w, err)
+		return
+	}
+
+	view := commentToView(comment)
+	h.responder.JSON(w, http.StatusCreated, toCommentResponse(view))
+}
+
+func (h *Handler) Reply(w http.ResponseWriter, r *http.Request) {
+	user, _ := request.GetUser(r)
+
+	commentID, err := request.ReadCommentID(r)
+	if err != nil {
+		h.responder.NotFound(w, r)
+		return
+	}
+
+	var input ReplyCommentRequest
+
+	err = request.DecodeJSON(w, r, &input)
+	if err != nil {
+		h.responder.DecodeError(w, err)
+		return
+	}
+
+	v := validator.New()
+	if input.Vaildate(v); !v.Valid() {
+		h.responder.DecodeError(w, err)
+		return
+	}
+
+	params := ReplyParams{
+		UserID:   user.ID,
+		ParentID: commentID,
+		Content:  input.Content,
+	}
+
+	comment, err := h.service.Reply(r.Context(), params)
 	if err != nil {
 		h.responder.HandleServiceError(w, err)
 		return

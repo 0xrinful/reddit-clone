@@ -26,6 +26,7 @@ type Service interface {
 	CanVotePost(ctx context.Context, actorID, postID int64) error
 
 	CanComment(ctx context.Context, actorID, postID int64) error
+	CanReply(ctx context.Context, actorID, postID int64, status domain.CommentStatus) error
 }
 
 type MemberChecker interface {

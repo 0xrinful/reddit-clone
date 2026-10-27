@@ -15,6 +15,14 @@ func (r *CreateCommentRequest) Vaildate(v *validator.Validator) {
 	validator.ValidateCommentContent(v, r.Content)
 }
 
+type ReplyCommentRequest struct {
+	Content string `json:"content"`
+}
+
+func (r *ReplyCommentRequest) Vaildate(v *validator.Validator) {
+	validator.ValidateCommentContent(v, r.Content)
+}
+
 // DTOs
 type AuthorDTO struct {
 	ID       int64  `json:"id,omitempty"`
@@ -52,6 +60,7 @@ func toCommentPublicDTO(c *CommentView) CommentPublicDTO {
 		Author: AuthorDTO{
 			ID: c.UserID,
 		},
+		ParentID:   c.ParentID,
 		Content:    c.Content,
 		Score:      c.Score,
 		ReplyCount: c.ReplyCount,

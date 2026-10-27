@@ -120,6 +120,13 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 				r.With(m.WriteLimit(), m.RequireAuth).Post("/", s.comments.Create)
 			})
 		})
+
+		// ─── Comments ────────────────────────────────────────────────────────
+		r.Route("/comments/{comment_id}", func(r *rush.Router) {
+			r.Route("/replies", func(r *rush.Router) {
+				r.With(m.WriteLimit(), m.RequireAuth).Post("/", s.comments.Reply)
+			})
+		})
 	})
 
 	return r
