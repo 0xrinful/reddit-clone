@@ -10,6 +10,7 @@ import (
 type Service interface {
 	Create(ctx context.Context, params CreateParams) (*Comment, error)
 	Reply(ctx context.Context, params ReplyParams) (*Comment, error)
+	ListByPost(ctx context.Context, params ListByPostParams) ([]*CommentView, error)
 }
 
 type Authorizer interface {
@@ -99,4 +100,8 @@ func (s *service) Reply(ctx context.Context, params ReplyParams) (*Comment, erro
 	}
 
 	return c, nil
+}
+
+func (s *service) ListByPost(ctx context.Context, params ListByPostParams) ([]*CommentView, error) {
+	return s.commentsRepo.ListByPost(ctx, params)
 }

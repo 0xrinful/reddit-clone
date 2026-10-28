@@ -58,7 +58,8 @@ func toCommentPublicDTO(c *CommentView) CommentPublicDTO {
 			ID: c.PostID,
 		},
 		Author: AuthorDTO{
-			ID: c.UserID,
+			ID:       c.UserID,
+			Username: c.Author.Username,
 		},
 		ParentID:   c.ParentID,
 		Content:    c.Content,
@@ -73,7 +74,20 @@ type CommentResponse struct {
 	Comment any `json:"comment"`
 }
 
+type ListCommentsResponse struct {
+	Comments   []CommentPublicDTO `json:"comments"`
+	NextCursor string             `json:"next_cursor,omitempty"`
+}
+
 // response constructor
 func toCommentResponse(c *CommentView) CommentResponse {
 	return CommentResponse{Comment: toCommentPublicDTO(c)}
+}
+
+func toListCommentsResponse(c []*CommentView, nextCursor string) ListCommentsResponse {
+	comments := make([]CommentPublicDTO, len(c))
+	for i := range c {
+		comments[i] = toCommentPublicDTO(c[i])
+	}
+	return ListCommentsResponse{Comments: comments, NextCursor: nextCursor}
 }

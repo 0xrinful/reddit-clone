@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/0xrinful/reddit-clone/internal/domain"
+	"github.com/0xrinful/reddit-clone/internal/shared/pagination"
 )
 
 type Comment struct {
@@ -38,4 +39,29 @@ type ReplyParams struct {
 	UserID   int64
 	ParentID int64
 	Content  string
+}
+
+type SortBy string
+
+const (
+	SortByNew SortBy = "new"
+	SortByTop SortBy = "top"
+)
+
+func (s SortBy) Valid() bool {
+	switch s {
+	case SortByNew, SortByTop:
+		return true
+	}
+	return false
+}
+
+type ListByPostParams struct {
+	Sort       SortBy
+	Pagination pagination.CursorParams[pagination.CommentCursor]
+	PostID     int64
+}
+
+type ListRepliesParams struct {
+	CommentID int64
 }
