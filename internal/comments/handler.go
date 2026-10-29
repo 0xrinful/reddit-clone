@@ -148,3 +148,44 @@ func (h *Handler) ListByPost(w http.ResponseWriter, r *http.Request) {
 
 	h.responder.JSON(w, http.StatusOK, toListCommentsResponse(comments, nextCursor))
 }
+
+func (h *Handler) ListReplies(w http.ResponseWriter, r *http.Request) {
+	commendID, err := request.ReadCommentID(r)
+	if err != nil {
+		h.responder.NotFound(w, r)
+		return
+	}
+
+	v := validator.New()
+	pageParams := request.ParseCursorPagination(r, v, pagination.DecodeCommentCursor)
+
+	if !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	limit := pageParams.Limit
+	pageParams.Limit += 1
+
+	params := ListRepliesParams{
+		Pagination: pageParams,
+		CommentID:  commendID,
+	}
+
+	comments, err := h.service.ListReplies(r.Context(), params)
+	if err != nil {
+		h.responder.HandleServiceError(w, err)
+		return
+	}
+
+	var nextCursor string
+	if len(comments) > limit {
+		page := comments[:limit]
+		last := page[len(page)-1]
+		next := &pagination.CommentCursor{ID: last.ID, CreatedAt: &last.CreatedAt}
+		nextCursor = next.Encode()
+		comments = page
+	}
+
+	h.responder.JSON(w, http.StatusOK, toListCommentsResponse(comments, nextCursor))
+}

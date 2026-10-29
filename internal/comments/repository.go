@@ -16,6 +16,7 @@ type Repository interface {
 	GetByID(ctx context.Context, id int64) (*Comment, error)
 	Create(ctx context.Context, c *Comment) error
 	ListByPost(ctx context.Context, params ListByPostParams) ([]*CommentView, error)
+	ListReplies(ctx context.Context, params ListRepliesParams) ([]*CommentView, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -70,7 +71,8 @@ func (r *postgresRepository) Create(ctx context.Context, c *Comment) error {
 	return nil
 }
 
-func (r *postgresRepository) ListByPost(ctx context.Context,
+func (r *postgresRepository) ListByPost(
+	ctx context.Context,
 	params ListByPostParams,
 ) ([]*CommentView, error) {
 	q := query.New()
@@ -100,6 +102,55 @@ func (r *postgresRepository) ListByPost(ctx context.Context,
 	default:
 		panic("invalid sort value")
 	}
+
+	q.Limit(params.Pagination.Limit)
+	query, args := q.ToSql()
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	rows, err := r.db(ctx).QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	comments := make([]*CommentView, 0, params.Pagination.Limit)
+	for rows.Next() {
+		c, err := scanView(rows)
+		if err != nil {
+			return nil, err
+		}
+		comments = append(comments, c)
+	}
+
+	if rows.Err() != nil {
+		return nil, err
+	}
+
+	return comments, nil
+}
+
+func (r *postgresRepository) ListReplies(
+	ctx context.Context,
+	params ListRepliesParams,
+) ([]*CommentView, error) {
+	q := query.New()
+	cursor := params.Pagination.Cursor
+
+	q.Select(
+		"c.id, c.post_id, c.user_id, u.username, c.parent_id, c.content, c.score, c.reply_count, c.status, c.created_at",
+		"comments c",
+	)
+	q.Join("users u ON c.user_id = u.id")
+
+	q.Where("c.parent_id = ?", params.CommentID)
+	q.Where("c.status = ?", domain.CommentStatusVisible)
+
+	if cursor != nil {
+		q.Where("(c.created_at, c.id) > (?, ?)", cursor.CreatedAt, cursor.ID)
+	}
+	q.Order("c.created_at ASC, c.id ASC")
 
 	q.Limit(params.Pagination.Limit)
 	query, args := q.ToSql()

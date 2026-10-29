@@ -11,6 +11,7 @@ type Service interface {
 	Create(ctx context.Context, params CreateParams) (*Comment, error)
 	Reply(ctx context.Context, params ReplyParams) (*Comment, error)
 	ListByPost(ctx context.Context, params ListByPostParams) ([]*CommentView, error)
+	ListReplies(ctx context.Context, params ListRepliesParams) ([]*CommentView, error)
 }
 
 type Authorizer interface {
@@ -104,4 +105,11 @@ func (s *service) Reply(ctx context.Context, params ReplyParams) (*Comment, erro
 
 func (s *service) ListByPost(ctx context.Context, params ListByPostParams) ([]*CommentView, error) {
 	return s.commentsRepo.ListByPost(ctx, params)
+}
+
+func (s *service) ListReplies(
+	ctx context.Context,
+	params ListRepliesParams,
+) ([]*CommentView, error) {
+	return s.commentsRepo.ListReplies(ctx, params)
 }

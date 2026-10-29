@@ -15,7 +15,6 @@ type Comment struct {
 	Content    string
 	Score      int64
 	ReplyCount int
-	Depth      int
 	Status     domain.CommentStatus
 	CreatedAt  time.Time
 }
@@ -63,5 +62,6 @@ type ListByPostParams struct {
 }
 
 type ListRepliesParams struct {
-	CommentID int64
+	Pagination pagination.CursorParams[pagination.CommentCursor]
+	CommentID  int64
 }

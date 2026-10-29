@@ -55,8 +55,8 @@
 │       │   └── DELETE               → remove vote (+ auth) ✅
 │       │
 │       └── comments/
-│           ├── GET                  → list top-level comments
-│           └── POST                 → create comment (+ auth)
+│           ├── GET                  → list top-level comments ✅
+│           └── POST                 → create comment (+ auth) ✅
 │
 ├── comments/
 │   └── {comment_id}/
@@ -69,8 +69,8 @@
 │       │   └── DELETE               → remove vote (+ auth)
 │       │
 │       └── replies/
-│           ├── GET                  → list direct replies
-│           └── POST                 → create reply (+ auth)
+│           ├── GET                  → list direct replies ✅
+│           └── POST                 → create reply (+ auth) ✅
 │
 ├── users/
 │   └── {username}/
