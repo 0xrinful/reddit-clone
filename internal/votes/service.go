@@ -9,14 +9,21 @@ import (
 type Service interface {
 	VotePost(ctx context.Context, vote PostVote) (*VotePostResult, error)
 	UnvotePost(ctx context.Context, userID, postID int64) (*VotePostResult, error)
+	VoteComment(ctx context.Context, vote CommentVote) (*VoteCommentResult, error)
+	UnvoteComment(ctx context.Context, userID, commentID int64) (*VoteCommentResult, error)
 }
 
 type Authorizer interface {
 	CanVotePost(ctx context.Context, actorID, postID int64) error
+	CanVoteComment(ctx context.Context, actorID, commentID int64) error
 }
 
 type PostsRepo interface {
 	ApplyScoreDelta(ctx context.Context, postID int64, delta int64) (int64, error)
+}
+
+type CommentsRepo interface {
+	ApplyScoreDelta(ctx context.Context, commentID int64, delta int64) (int64, error)
 }
 
 func NewService(
@@ -24,20 +31,23 @@ func NewService(
 	authz Authorizer,
 	votesRepo Repository,
 	postsRepo PostsRepo,
+	commentsRepo CommentsRepo,
 ) Service {
 	return &service{
-		txBeginner: txBeginner,
-		authz:      authz,
-		votesRepo:  votesRepo,
-		postsRepo:  postsRepo,
+		txBeginner:   txBeginner,
+		authz:        authz,
+		votesRepo:    votesRepo,
+		postsRepo:    postsRepo,
+		commentsRepo: commentsRepo,
 	}
 }
 
 type service struct {
-	txBeginner database.TxBeginner
-	authz      Authorizer
-	votesRepo  Repository
-	postsRepo  PostsRepo
+	txBeginner   database.TxBeginner
+	authz        Authorizer
+	votesRepo    Repository
+	postsRepo    PostsRepo
+	commentsRepo CommentsRepo
 }
 
 func (s *service) VotePost(ctx context.Context, vote PostVote) (*VotePostResult, error) {
@@ -103,6 +113,77 @@ func (s *service) UnvotePost(ctx context.Context, userID, postID int64) (*VotePo
 		PostID: postID,
 		Score:  newScore,
 		Value:  0,
+	}
+
+	return result, nil
+}
+
+func (s *service) VoteComment(ctx context.Context, vote CommentVote) (*VoteCommentResult, error) {
+	tx, err := s.txBeginner.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	ctxTx := database.WithTx(ctx, tx)
+
+	if err := s.authz.CanVoteComment(ctxTx, vote.UserID, vote.CommentID); err != nil {
+		return nil, err
+	}
+
+	delta, err := s.votesRepo.VoteComment(ctxTx, vote)
+	if err != nil {
+		return nil, err
+	}
+
+	newScore, err := s.commentsRepo.ApplyScoreDelta(ctxTx, vote.CommentID, delta)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	result := &VoteCommentResult{
+		CommentID: vote.CommentID,
+		Score:     newScore,
+		Value:     vote.Value,
+	}
+
+	return result, nil
+}
+
+func (s *service) UnvoteComment(
+	ctx context.Context,
+	userID, commentID int64,
+) (*VoteCommentResult, error) {
+	tx, err := s.txBeginner.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	ctxTx := database.WithTx(ctx, tx)
+
+	delta, err := s.votesRepo.UnvoteComment(ctxTx, userID, commentID)
+	if err != nil {
+		return nil, err
+	}
+
+	newScore, err := s.commentsRepo.ApplyScoreDelta(ctxTx, commentID, delta)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	result := &VoteCommentResult{
+		CommentID: commentID,
+		Score:     newScore,
+		Value:     0,
 	}
 
 	return result, nil

@@ -65,8 +65,8 @@
 │       ├── DELETE                   → delete comment (+ auth)
 │       │
 │       ├── votes/
-│       │   ├── PUT                  → create/update vote (+ auth)
-│       │   └── DELETE               → remove vote (+ auth)
+│       │   ├── PUT                  → create/update vote (+ auth) ✅
+│       │   └── DELETE               → remove vote (+ auth) ✅
 │       │
 │       └── replies/
 │           ├── GET                  → list direct replies ✅

@@ -55,7 +55,7 @@ func main() {
 	votesRepo := votes.NewRepository(db)
 	commentsRepo := comments.NewRepository(db)
 
-	authzSvc := authorization.NewService(bansRepo, membersRepo, postsRepo)
+	authzSvc := authorization.NewService(bansRepo, membersRepo, postsRepo, commentsRepo)
 	communitiesSvc := communities.NewService(db, authzSvc, communitiesRepo, membersRepo)
 	postsSvc := posts.NewService(db, authzSvc, postsRepo, votesRepo)
 	usersSvc := users.NewService(usersRepo)
@@ -63,8 +63,8 @@ func main() {
 	tokensSvc := tokens.NewService(db, tokensRepo, cfg.JWT)
 	membersSvc := members.NewService(authzSvc, membersRepo, usersRepo)
 	bansSvc := bans.NewService(db, authzSvc, bansRepo, usersRepo)
-	votesSvc := votes.NewService(db, authzSvc, votesRepo, postsRepo)
-	commentsSvc := comments.NewService(db, authzSvc, commentsRepo)
+	votesSvc := votes.NewService(db, authzSvc, votesRepo, postsRepo, commentsRepo)
+	commentsSvc := comments.NewService(db, authzSvc, commentsRepo, votesRepo)
 
 	srv := server.New(
 		cfg, bg,

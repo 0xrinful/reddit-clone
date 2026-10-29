@@ -17,6 +17,8 @@ type Repository interface {
 	Create(ctx context.Context, c *Comment) error
 	ListByPost(ctx context.Context, params ListByPostParams) ([]*CommentView, error)
 	ListReplies(ctx context.Context, params ListRepliesParams) ([]*CommentView, error)
+	ApplyScoreDelta(ctx context.Context, commentID int64, delta int64) (int64, error)
+	GetAuthorizationData(ctx context.Context, id int64) (*domain.CommentAuthorizationData, error)
 }
 
 func NewRepository(db database.DB) Repository {
@@ -178,6 +180,52 @@ func (r *postgresRepository) ListReplies(
 	}
 
 	return comments, nil
+}
+
+func (r *postgresRepository) ApplyScoreDelta(
+	ctx context.Context,
+	commentID int64,
+	delta int64,
+) (int64, error) {
+	query := `
+		UPDATE comments SET score = score + $1
+		WHERE id = $2
+		RETURNING score`
+
+	var newScore int64
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	err := r.db(ctx).QueryRowContext(ctx, query, delta, commentID).Scan(&newScore)
+	if err != nil {
+		return 0, scanError(err)
+	}
+
+	return newScore, nil
+}
+
+func (r *postgresRepository) GetAuthorizationData(
+	ctx context.Context,
+	id int64,
+) (*domain.CommentAuthorizationData, error) {
+	query := `
+		SELECT user_id, post_id, status FROM comments 
+		WHERE id = $1`
+
+	var data domain.CommentAuthorizationData
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	err := r.db(ctx).
+		QueryRowContext(ctx, query, id).
+		Scan(&data.AuthorID, &data.PostID, &data.Status)
+	if err != nil {
+		return nil, scanError(err)
+	}
+
+	return &data, nil
 }
 
 func scanComment(row *sql.Row) (*Comment, error) {

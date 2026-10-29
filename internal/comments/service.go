@@ -19,15 +19,21 @@ type Authorizer interface {
 	CanReply(ctx context.Context, actorID, postID int64, status domain.CommentStatus) error
 }
 
+type VotesRepo interface {
+	CreateInitialCommentVote(ctx context.Context, userID, commentID int64) error
+}
+
 func NewService(
 	txBeginner database.TxBeginner,
 	authz Authorizer,
 	commentsRepo Repository,
+	votesRepo VotesRepo,
 ) Service {
 	return &service{
 		txBeginner:   txBeginner,
 		authz:        authz,
 		commentsRepo: commentsRepo,
+		votesRepo:    votesRepo,
 	}
 }
 
@@ -35,6 +41,7 @@ type service struct {
 	txBeginner   database.TxBeginner
 	authz        Authorizer
 	commentsRepo Repository
+	votesRepo    VotesRepo
 }
 
 func (s *service) Create(ctx context.Context, params CreateParams) (*Comment, error) {
@@ -57,6 +64,10 @@ func (s *service) Create(ctx context.Context, params CreateParams) (*Comment, er
 	}
 
 	if err := s.commentsRepo.Create(ctxTx, c); err != nil {
+		return nil, err
+	}
+
+	if err := s.votesRepo.CreateInitialCommentVote(ctxTx, params.UserID, c.ID); err != nil {
 		return nil, err
 	}
 
@@ -93,6 +104,10 @@ func (s *service) Reply(ctx context.Context, params ReplyParams) (*Comment, erro
 	}
 
 	if err := s.commentsRepo.Create(ctxTx, c); err != nil {
+		return nil, err
+	}
+
+	if err := s.votesRepo.CreateInitialCommentVote(ctxTx, params.UserID, c.ID); err != nil {
 		return nil, err
 	}
 

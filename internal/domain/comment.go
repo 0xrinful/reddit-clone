@@ -11,3 +11,9 @@ const (
 func (s CommentStatus) CanView() bool {
 	return s == CommentStatusVisible || s == CommentStatusDeleted
 }
+
+type CommentAuthorizationData struct {
+	AuthorID int64
+	PostID   int64
+	Status   PostStatus
+}

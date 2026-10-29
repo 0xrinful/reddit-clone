@@ -22,3 +22,15 @@ type VotePostResult struct {
 	Score  int64
 	Value  VoteValue
 }
+
+type CommentVote struct {
+	UserID    int64
+	CommentID int64
+	Value     VoteValue
+}
+
+type VoteCommentResult struct {
+	CommentID int64
+	Score     int64
+	Value     VoteValue
+}

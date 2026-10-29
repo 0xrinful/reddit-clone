@@ -124,6 +124,12 @@ func (s *Server) setupRoutes(responder *response.Responder) http.Handler {
 
 		// ─── Comments ────────────────────────────────────────────────────────
 		r.Route("/comments/{comment_id}", func(r *rush.Router) {
+			r.Route("/votes", func(r *rush.Router) {
+				r.Use(m.WriteLimit(), m.RequireAuth)
+				r.Put("/", s.votes.VoteComment)
+				r.Delete("/", s.votes.UnvoteComment)
+			})
+
 			r.Route("/replies", func(r *rush.Router) {
 				r.With(m.WriteLimit(), m.RequireAuth).Post("/", s.comments.Reply)
 				r.With(m.ReadLimit()).Get("/", s.comments.ListReplies)

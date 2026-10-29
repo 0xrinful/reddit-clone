@@ -70,3 +70,57 @@ func (h *Handler) UnvotePost(w http.ResponseWriter, r *http.Request) {
 
 	h.responder.JSON(w, http.StatusOK, toVotePostResponse(result))
 }
+
+func (h *Handler) VoteComment(w http.ResponseWriter, r *http.Request) {
+	user, _ := request.GetUser(r)
+
+	commentID, err := request.ReadCommentID(r)
+	if err != nil {
+		h.responder.NotFound(w, r)
+		return
+	}
+
+	var input VoteCommentRequest
+	if err := request.DecodeJSON(w, r, &input); err != nil {
+		h.responder.DecodeError(w, err)
+		return
+	}
+
+	v := validator.New()
+	if input.Validate(v); !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	vote := CommentVote{
+		UserID:    user.ID,
+		CommentID: commentID,
+		Value:     VoteValue(input.Value),
+	}
+
+	result, err := h.service.VoteComment(r.Context(), vote)
+	if err != nil {
+		h.responder.HandleServiceError(w, err)
+		return
+	}
+
+	h.responder.JSON(w, http.StatusOK, toVoteCommentResponse(result))
+}
+
+func (h *Handler) UnvoteComment(w http.ResponseWriter, r *http.Request) {
+	user, _ := request.GetUser(r)
+
+	commentID, err := request.ReadCommentID(r)
+	if err != nil {
+		h.responder.NotFound(w, r)
+		return
+	}
+
+	result, err := h.service.UnvoteComment(r.Context(), user.ID, commentID)
+	if err != nil {
+		h.responder.HandleServiceError(w, err)
+		return
+	}
+
+	h.responder.JSON(w, http.StatusOK, toVoteCommentResponse(result))
+}

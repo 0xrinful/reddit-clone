@@ -24,6 +24,7 @@ type Service interface {
 	CanViewPermissions(ctx context.Context, communityID, actorID int64) (bool, error)
 
 	CanVotePost(ctx context.Context, actorID, postID int64) error
+	CanVoteComment(ctx context.Context, actorID, commentID int64) error
 
 	CanComment(ctx context.Context, actorID, postID int64) error
 	CanReply(ctx context.Context, actorID, postID int64, status domain.CommentStatus) error
@@ -42,12 +43,27 @@ type PostsRepo interface {
 	GetAuthorizationData(ctx context.Context, id int64) (*domain.PostAuthorizationData, error)
 }
 
-func NewService(banChecker BanChecker, memberChecker MemberChecker, postsRepo PostsRepo) Service {
-	return &service{bans: banChecker, members: memberChecker, posts: postsRepo}
+type CommentsRepo interface {
+	GetAuthorizationData(ctx context.Context, id int64) (*domain.CommentAuthorizationData, error)
+}
+
+func NewService(
+	banChecker BanChecker,
+	memberChecker MemberChecker,
+	postsRepo PostsRepo,
+	commentsRepo CommentsRepo,
+) Service {
+	return &service{
+		bans:     banChecker,
+		members:  memberChecker,
+		posts:    postsRepo,
+		comments: commentsRepo,
+	}
 }
 
 type service struct {
-	bans    BanChecker
-	members MemberChecker
-	posts   PostsRepo
+	bans     BanChecker
+	members  MemberChecker
+	posts    PostsRepo
+	comments CommentsRepo
 }

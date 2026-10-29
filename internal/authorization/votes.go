@@ -27,3 +27,16 @@ func (s *service) CanVotePost(ctx context.Context, actorID, postID int64) error 
 
 	return nil
 }
+
+func (s *service) CanVoteComment(ctx context.Context, actorID, commentID int64) error {
+	info, err := s.comments.GetAuthorizationData(ctx, commentID)
+	if err != nil {
+		return err
+	}
+
+	if !info.Status.CanView() {
+		return errs.ErrPermissionDenied
+	}
+
+	return nil
+}
