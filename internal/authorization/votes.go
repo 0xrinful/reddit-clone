@@ -38,5 +38,14 @@ func (s *service) CanVoteComment(ctx context.Context, actorID, commentID int64) 
 		return errs.ErrPermissionDenied
 	}
 
+	banned, err := s.bans.IsBanned(ctx, info.CommunityID, actorID)
+	if err != nil {
+		return err
+	}
+
+	if banned {
+		return errs.ErrPermissionDenied
+	}
+
 	return nil
 }

@@ -110,7 +110,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	view := postToView(post, "")
-	h.responder.JSON(w, http.StatusCreated, toPostResponse(view, true))
+	h.responder.JSON(w, http.StatusOK, toPostResponse(view, true))
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {

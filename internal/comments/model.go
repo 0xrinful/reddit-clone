@@ -65,3 +65,7 @@ type ListRepliesParams struct {
 	Pagination pagination.CursorParams[pagination.CommentCursor]
 	CommentID  int64
 }
+
+type UpdateParams struct {
+	Content *string
+}

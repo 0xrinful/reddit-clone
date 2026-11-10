@@ -28,6 +28,9 @@ type Service interface {
 
 	CanComment(ctx context.Context, actorID, postID int64) error
 	CanReply(ctx context.Context, actorID, postID int64, status domain.CommentStatus) error
+	CanUpdateComment(ctx context.Context, actorID int64,
+		info *domain.CommentAuthorizationData) error
+	CanDeleteComment(ctx context.Context, actorID, authorID int64) error
 }
 
 type MemberChecker interface {

@@ -19,6 +19,8 @@ type Repository interface {
 	ListReplies(ctx context.Context, params ListRepliesParams) ([]*CommentView, error)
 	ApplyScoreDelta(ctx context.Context, commentID int64, delta int64) (int64, error)
 	GetAuthorizationData(ctx context.Context, id int64) (*domain.CommentAuthorizationData, error)
+	Update(ctx context.Context, id int64, p UpdateParams) (*Comment, error)
+	Delete(ctx context.Context, id int64) error
 }
 
 func NewRepository(db database.DB) Repository {
@@ -210,8 +212,10 @@ func (r *postgresRepository) GetAuthorizationData(
 	id int64,
 ) (*domain.CommentAuthorizationData, error) {
 	query := `
-		SELECT user_id, post_id, status FROM comments 
-		WHERE id = $1`
+		SELECT c.user_id, c.post_id, c.status, co.id FROM comments c
+		JOIN posts p ON c.post_id = p.id
+		JOIN communities co ON p.community_id = co.id
+		WHERE c.id = $1`
 
 	var data domain.CommentAuthorizationData
 
@@ -220,12 +224,58 @@ func (r *postgresRepository) GetAuthorizationData(
 
 	err := r.db(ctx).
 		QueryRowContext(ctx, query, id).
-		Scan(&data.AuthorID, &data.PostID, &data.Status)
+		Scan(&data.AuthorID, &data.PostID, &data.Status, &data.CommunityID)
 	if err != nil {
 		return nil, scanError(err)
 	}
 
 	return &data, nil
+}
+
+func (r *postgresRepository) Update(
+	ctx context.Context,
+	id int64,
+	p UpdateParams,
+) (*Comment, error) {
+	q := query.New()
+	q.Update("comments")
+
+	if p.Content != nil {
+		q.Set("content = ?", *p.Content)
+	}
+
+	q.Where("id = ?", id)
+	q.Returning("id, post_id, user_id, parent_id, content, score, reply_count, status, created_at")
+	query, args := q.ToSql()
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	row := r.db(ctx).QueryRowContext(ctx, query, args...)
+	return scanComment(row)
+}
+
+func (r *postgresRepository) Delete(ctx context.Context, id int64) error {
+	query := `DELETE FROM comments WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	result, err := r.db(ctx).ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows == 0 {
+		return errs.ErrNotFound
+	}
+
+	return nil
 }
 
 func scanComment(row *sql.Row) (*Comment, error) {

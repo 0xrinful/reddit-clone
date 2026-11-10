@@ -12,11 +12,16 @@ type Service interface {
 	Reply(ctx context.Context, params ReplyParams) (*Comment, error)
 	ListByPost(ctx context.Context, params ListByPostParams) ([]*CommentView, error)
 	ListReplies(ctx context.Context, params ListRepliesParams) ([]*CommentView, error)
+	Update(ctx context.Context, id, actorID int64, p UpdateParams) (*Comment, error)
+	Delete(ctx context.Context, id, actorID int64) error
 }
 
 type Authorizer interface {
 	CanComment(ctx context.Context, actorID, postID int64) error
 	CanReply(ctx context.Context, actorID, postID int64, status domain.CommentStatus) error
+	CanUpdateComment(ctx context.Context, actorID int64,
+		info *domain.CommentAuthorizationData) error
+	CanDeleteComment(ctx context.Context, actorID, authorID int64) error
 }
 
 type VotesRepo interface {
@@ -127,4 +132,30 @@ func (s *service) ListReplies(
 	params ListRepliesParams,
 ) ([]*CommentView, error) {
 	return s.commentsRepo.ListReplies(ctx, params)
+}
+
+func (s *service) Update(ctx context.Context, id, actorID int64, p UpdateParams) (*Comment, error) {
+	comment, err := s.commentsRepo.GetAuthorizationData(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.authz.CanUpdateComment(ctx, actorID, comment); err != nil {
+		return nil, err
+	}
+
+	return s.commentsRepo.Update(ctx, id, p)
+}
+
+func (s *service) Delete(ctx context.Context, id, actorID int64) error {
+	comment, err := s.commentsRepo.GetAuthorizationData(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if err := s.authz.CanDeleteComment(ctx, actorID, comment.AuthorID); err != nil {
+		return err
+	}
+
+	return s.commentsRepo.Delete(ctx, id)
 }

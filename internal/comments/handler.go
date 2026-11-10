@@ -189,3 +189,55 @@ func (h *Handler) ListReplies(w http.ResponseWriter, r *http.Request) {
 
 	h.responder.JSON(w, http.StatusOK, toListCommentsResponse(comments, nextCursor))
 }
+
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	commentID, err := request.ReadCommentID(r)
+	if err != nil {
+		h.responder.NotFound(w, r)
+		return
+	}
+
+	var input UpdateCommentRequest
+
+	err = request.DecodeJSON(w, r, &input)
+	if err != nil {
+		h.responder.DecodeError(w, err)
+		return
+	}
+
+	v := validator.New()
+	if input.Vaildate(v); !v.Valid() {
+		h.responder.ValidationError(w, v.Errors)
+		return
+	}
+
+	user, _ := request.GetUser(r)
+	params := UpdateParams(input)
+
+	comment, err := h.service.Update(r.Context(), commentID, user.ID, params)
+	if err != nil {
+		h.responder.HandleServiceError(w, err)
+		return
+	}
+
+	view := commentToView(comment)
+	h.responder.JSON(w, http.StatusOK, toCommentResponse(view))
+}
+
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	commentID, err := request.ReadCommentID(r)
+	if err != nil {
+		h.responder.NotFound(w, r)
+		return
+	}
+
+	user, _ := request.GetUser(r)
+
+	err = h.service.Delete(r.Context(), commentID, user.ID)
+	if err != nil {
+		h.responder.HandleServiceError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

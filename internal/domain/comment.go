@@ -13,7 +13,8 @@ func (s CommentStatus) CanView() bool {
 }
 
 type CommentAuthorizationData struct {
-	AuthorID int64
-	PostID   int64
-	Status   PostStatus
+	AuthorID    int64
+	CommunityID int64
+	PostID      int64
+	Status      PostStatus
 }

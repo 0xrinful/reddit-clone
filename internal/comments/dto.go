@@ -23,6 +23,21 @@ func (r *ReplyCommentRequest) Vaildate(v *validator.Validator) {
 	validator.ValidateCommentContent(v, r.Content)
 }
 
+type UpdateCommentRequest struct {
+	Content *string `json:"content"`
+}
+
+func (r *UpdateCommentRequest) Vaildate(v *validator.Validator) {
+	if r.Content == nil {
+		v.AddError("request", "must provide at least one field")
+		return
+	}
+
+	if r.Content != nil {
+		validator.ValidateCommentContent(v, *r.Content)
+	}
+}
+
 // DTOs
 type AuthorDTO struct {
 	ID       int64  `json:"id,omitempty"`
